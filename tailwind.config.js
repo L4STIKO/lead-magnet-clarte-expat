@@ -7,13 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        dark: '#121823',
-        accent: '#00d9a3',
-        light: '#f2f4f6',
+        dark: 'var(--bg-primary)',
+        card: 'var(--bg-card)',
+        'card-hover': 'var(--bg-card-hover)',
+        accent: 'var(--accent)',
+        'accent-dark': 'var(--accent-dark)',
+        light: 'var(--text-primary)',
+        secondary: 'var(--text-secondary)',
+        muted: 'var(--text-muted)',
       },
       fontFamily: {
         heading: ['Montserrat', 'sans-serif'],
         body: ['Poppins', 'sans-serif'],
+      },
+      borderRadius: {
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
       },
     },
   },

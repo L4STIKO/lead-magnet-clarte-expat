@@ -15,16 +15,31 @@ export default function LeadForm({ onSubmit, loading }: Props) {
     onSubmit(prenom.trim(), email.trim())
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '14px 18px',
+    fontSize: 15,
+    fontFamily: "'Poppins', sans-serif",
+    color: 'var(--text-primary)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    border: '1.5px solid var(--border)',
+    borderRadius: 'var(--radius-md)',
+    outline: 'none',
+    marginBottom: 12,
+    transition: 'border-color 0.15s',
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
+    <form onSubmit={handleSubmit}>
       <input
         type="text"
         placeholder="Ton prénom"
         value={prenom}
         onChange={(e) => setPrenom(e.target.value)}
         required
-        className="w-full px-5 py-3 rounded-xl bg-light/10 border border-light/20 text-light
-                   placeholder:text-light/40 font-body focus:outline-none focus:border-accent transition-colors"
+        style={inputStyle}
+        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)' }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
       />
       <input
         type="email"
@@ -32,14 +47,27 @@ export default function LeadForm({ onSubmit, loading }: Props) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="w-full px-5 py-3 rounded-xl bg-light/10 border border-light/20 text-light
-                   placeholder:text-light/40 font-body focus:outline-none focus:border-accent transition-colors"
+        style={inputStyle}
+        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)' }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
       />
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-4 bg-accent text-dark font-heading font-bold text-lg rounded-xl
-                   hover:bg-accent/90 transition-colors cursor-pointer disabled:opacity-50"
+        className="font-body font-bold cursor-pointer"
+        style={{
+          width: '100%',
+          padding: 16,
+          fontSize: 16,
+          backgroundColor: 'var(--accent)',
+          color: '#121823',
+          border: 'none',
+          borderRadius: 'var(--radius-md)',
+          opacity: loading ? 0.5 : 1,
+          transition: 'background-color 0.15s',
+        }}
+        onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = 'var(--accent-dark)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent)' }}
       >
         {loading ? 'Envoi en cours...' : 'Recevoir mon plan gratuit →'}
       </button>
