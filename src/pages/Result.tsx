@@ -40,12 +40,17 @@ export default function Result() {
 
     try {
       // 1. Générer le PDF
+      console.log('[Result] Étape 1 — Génération PDF...')
       const pdfBlob = generatePdf(prenom, answers, scores)
+      console.log('[Result] PDF généré:', pdfBlob.size, 'octets')
 
       // 2. Upload dans Supabase Storage
+      console.log('[Result] Étape 2 — Upload PDF...')
       const { signedUrl } = await uploadPdf(pdfBlob)
+      console.log('[Result] Upload OK, URL signée obtenue')
 
       // 3. Edge Function: insert contact + envoi email
+      console.log('[Result] Étape 3 — Appel Edge Function...')
       await submitLead({
         prenom,
         email,
@@ -53,6 +58,7 @@ export default function Result() {
         scores,
         pdfUrl: signedUrl,
       })
+      console.log('[Result] Edge Function OK')
 
       // 4. Stocker les infos pour la page plan
       sessionStorage.setItem('clarte-expat-prenom', prenom)
@@ -60,10 +66,12 @@ export default function Result() {
       sessionStorage.setItem('clarte-expat-pdf-url', signedUrl)
 
       // 5. Redirect vers le plan
+      console.log('[Result] Redirect vers /plan')
       navigate('/plan')
     } catch (err) {
-      console.error('Erreur soumission:', err)
-      setError("Une erreur est survenue. Réessaie dans quelques instants.")
+      console.error('[Result] ERREUR:', err)
+      const message = err instanceof Error ? err.message : 'Erreur inconnue'
+      setError(`Erreur : ${message}`)
       setLoading(false)
     }
   }
