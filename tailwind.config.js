@@ -7,9 +7,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#121823',
+        dark: '#121823',
         accent: '#00d9a3',
         light: '#f2f4f6',
+      },
+      fontFamily: {
+        heading: ['Montserrat', 'sans-serif'],
+        body: ['Poppins', 'sans-serif'],
       },
     },
   },

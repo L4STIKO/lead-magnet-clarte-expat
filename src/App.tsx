@@ -1,12 +1,18 @@
-function App() {
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Landing from './pages/Landing'
+import Quiz from './pages/Quiz'
+import Result from './pages/Result'
+import Plan from './pages/Plan'
+
+export default function App() {
   return (
-    <div className="min-h-screen bg-light flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-primary mb-4">Clarté Expat</h1>
-        <p className="text-lg text-primary/70">Lead Magnet</p>
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/quiz" element={<Quiz />} />
+        <Route path="/resultat" element={<Result />} />
+        <Route path="/plan" element={<Plan />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
-
-export default App
