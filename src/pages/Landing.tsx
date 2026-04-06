@@ -6,7 +6,7 @@ export default function Landing() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto text-center pt-16 md:pt-24">
+      <div className="max-w-[720px] mx-auto text-center pt-16 md:pt-24">
         <h1 className="font-heading font-extrabold text-4xl md:text-5xl lg:text-6xl leading-tight mb-6">
           <span className="text-light">Ne pars pas de France sans ce plan</span>
           <br />

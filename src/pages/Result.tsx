@@ -80,7 +80,7 @@ export default function Result() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto pt-8 md:pt-16">
+      <div className="max-w-[720px] mx-auto pt-8 md:pt-16">
         {/* Score global */}
         <div className="text-center mb-12">
           <p className="font-body text-light/60 text-sm uppercase tracking-wider mb-2">
