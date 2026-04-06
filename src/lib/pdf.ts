@@ -100,6 +100,127 @@ function gauge(ctx: Ctx, label: string, score: number) {
   ctx.y += 14
 }
 
+function textItalic(ctx: Ctx, s: string, size: number, color: RGB, opts?: {
+  x?: number; maxW?: number
+}) {
+  const { doc, m, cw } = ctx
+  const x = opts?.x ?? m
+  const maxW = opts?.maxW ?? cw
+  doc.setFontSize(size)
+  doc.setTextColor(...color)
+  doc.setFont('helvetica', 'italic')
+
+  const lines = doc.splitTextToSize(s, maxW) as string[]
+  const lh = size * 0.45
+
+  for (const line of lines) {
+    ensure(ctx, lh + 1)
+    doc.text(line, x, ctx.y)
+    ctx.y += lh
+  }
+}
+
+interface TableRow {
+  action: string
+  how: string
+  why: string
+}
+
+function drawTable(ctx: Ctx, rows: TableRow[]) {
+  const { doc, m, cw } = ctx
+  const pad = 6
+  const col1W = cw * 0.25
+  const col2W = cw * 0.45
+  const col3W = cw * 0.30
+  const col1X = m + pad
+  const col2X = m + col1W + pad
+  const col3X = m + col1W + col2W + pad
+  const innerCol1 = col1W - pad * 2
+  const innerCol2 = col2W - pad * 2
+  const innerCol3 = col3W - pad * 2
+
+  // ── Header row ──
+  ensure(ctx, 14)
+  doc.setFillColor(255, 255, 255)
+  doc.setGState(doc.GState({ opacity: 0.06 }))
+  doc.rect(m, ctx.y, cw, 10, 'F')
+  doc.setGState(doc.GState({ opacity: 1 }))
+
+  const headerY = ctx.y + 7
+  doc.setFontSize(7)
+  doc.setTextColor(...MUTED)
+  doc.setFont('helvetica', 'bold')
+  doc.text('CE QUE TU FAIS', col1X, headerY)
+  doc.text('COMMENT LE FAIRE', col2X, headerY)
+  doc.text("POURQUOI C'EST IMPORTANT", col3X, headerY)
+  ctx.y += 10
+
+  // Header accent line
+  doc.setDrawColor(...ACCENT)
+  doc.setGState(doc.GState({ opacity: 0.3 }))
+  doc.setLineWidth(0.5)
+  doc.line(m, ctx.y, m + cw, ctx.y)
+  doc.setGState(doc.GState({ opacity: 1 }))
+  doc.setLineWidth(0.2)
+
+  // ── Data rows ──
+  rows.forEach((row, ri) => {
+    // Measure row height
+    const h1 = measure(ctx, row.action, 9, innerCol1)
+    const h2 = measure(ctx, row.how, 8.5, innerCol2)
+    const h3 = row.why ? measure(ctx, row.why, 8.5, innerCol3) : 0
+    const rowH = Math.max(h1, h2, h3) + 16 // padding top+bottom
+
+    ensure(ctx, rowH + 2)
+
+    // Alternating background
+    const bg = ri % 2 === 0 ? CARD : CARD_ALT
+    doc.setFillColor(...bg)
+    doc.rect(m, ctx.y, cw, rowH, 'F')
+
+    const cellTop = ctx.y + 8
+
+    // Col 1: action
+    const savedY = ctx.y
+    ctx.y = cellTop
+    text(ctx, row.action, 9, LIGHT, { bold: true, x: col1X, maxW: innerCol1 })
+
+    // Col 2: how
+    ctx.y = cellTop
+    doc.setFontSize(8.5)
+    doc.setTextColor(...SECONDARY)
+    doc.setFont('helvetica', 'normal')
+    const howLines = doc.splitTextToSize(row.how, innerCol2) as string[]
+    for (const line of howLines) {
+      doc.text(line, col2X, ctx.y)
+      ctx.y += 8.5 * 0.45
+    }
+
+    // Col 3: why (italic)
+    if (row.why) {
+      ctx.y = cellTop
+      doc.setFontSize(8.5)
+      doc.setTextColor(...MUTED)
+      doc.setFont('helvetica', 'italic')
+      const whyLines = doc.splitTextToSize(row.why, innerCol3) as string[]
+      for (const line of whyLines) {
+        doc.text(line, col3X, ctx.y)
+        ctx.y += 8.5 * 0.45
+      }
+    }
+
+    ctx.y = savedY + rowH
+
+    // Row separator
+    if (ri < rows.length - 1) {
+      doc.setDrawColor(255, 255, 255)
+      doc.setGState(doc.GState({ opacity: 0.04 }))
+      doc.line(m, ctx.y, m + cw, ctx.y)
+      doc.setGState(doc.GState({ opacity: 1 }))
+    }
+  })
+}
+
 function separator(ctx: Ctx) {
   ctx.doc.setDrawColor(255, 255, 255)
   ctx.doc.setGState(ctx.doc.GState({ opacity: 0.06 }))
@@ -170,7 +291,7 @@ export function generatePdf(
     ctx.y += 10
   }
 
-  // ── PLAN PAGES ──
+  // ── PLAN PAGES — organized by pillar ──
   darkPage(ctx)
 
   text(ctx, "Ton plan d'action en 6 etapes", 22, LIGHT, { bold: true, align: 'center' })
@@ -178,96 +299,78 @@ export function generatePdf(
   text(ctx, "Suis ces etapes dans l'ordre pour une expatriation propre et sereine.", 9, MUTED, { align: 'center' })
   ctx.y += 18
 
-  for (const step of steps) {
-    ensure(ctx, 40)
+  const pillars = [
+    { num: 1 as const, score: scores.p1, stepNumbers: [1, 2] },
+    { num: 2 as const, score: scores.p2, stepNumbers: [3] },
+    { num: 3 as const, score: scores.p3, stepNumbers: [4, 5, 6] },
+  ]
 
-    // Step header with accent left bar
-    const hY = ctx.y
+  for (const pillar of pillars) {
+    const level = getLevel(pillar.score)
+
+    // ── Pillar header card ──
+    ensure(ctx, 42)
+    doc.setFillColor(...CARD)
+    doc.roundedRect(m, ctx.y, cw, 38, 3, 3, 'F')
+    // Accent left bar
     doc.setFillColor(...ACCENT)
-    doc.rect(m, hY - 5, 2.5, 16, 'F')
+    doc.rect(m, ctx.y, 3, 38, 'F')
 
-    text(ctx, `ETAPE ${step.number}`, 8, ACCENT, { bold: true, x: m + 8 })
-    ctx.y += 1.5
-    text(ctx, step.title, 14, LIGHT, { bold: true, x: m + 8, maxW: cw - 8 })
+    const pillarTop = ctx.y
+    ctx.y += 10
+    text(ctx, `PILIER ${pillar.num}`, 8, ACCENT, { bold: true, x: m + 10 })
+    ctx.y += 2
+    text(ctx, pillarNames[pillar.num].toUpperCase(), 13, LIGHT, { bold: true, x: m + 10, maxW: cw - 20 })
     ctx.y += 3
+    textItalic(ctx, pillarIntros[pillar.num][level], 8.5, SECONDARY, { x: m + 10, maxW: cw - 20 })
+    ctx.y = pillarTop + 38 + 10
 
-    let sub = step.subtitle
-    if (step.milestone) sub += ` — ${step.milestone}`
-    text(ctx, sub, 8.5, MUTED, { x: m + 8, maxW: cw - 8 })
-    ctx.y += 12
+    // ── Steps within this pillar ──
+    for (const stepNum of pillar.stepNumbers) {
+      const step = steps[stepNum - 1]
 
-    // Action rows as cards with alternating colors
-    step.rows.forEach((row, ri) => {
-      const colW = (cw - 20 - 8) / 2
-      const howH = measure(ctx, row.how, 8.5, colW)
-      const whyH = row.why ? measure(ctx, row.why, 8.5, colW) : 0
-      const actionH = measure(ctx, row.action, 10.5, cw - 20)
-      const colsH = Math.max(howH + 8, whyH + 8)
-      const cardH = actionH + 8 + colsH + 12
+      // Step header
+      ensure(ctx, 30)
+      text(ctx, `ETAPE ${step.number}`, 7.5, ACCENT, { bold: true })
+      ctx.y += 1
+      text(ctx, step.title, 12, LIGHT, { bold: true })
+      ctx.y += 2
+      let sub = step.subtitle
+      if (step.milestone) sub += ` — ${step.milestone}`
+      textItalic(ctx, sub, 8, MUTED)
+      ctx.y += 8
 
-      ensure(ctx, cardH + 6)
-
-      // Card background — alternating
-      const bg = ri % 2 === 0 ? CARD : CARD_ALT
-      doc.setFillColor(...bg)
-      doc.roundedRect(m, ctx.y, cw, cardH, 3, 3, 'F')
-
-      const top = ctx.y
-      ctx.y += 7
-
-      // Action title
-      text(ctx, row.action, 10.5, ACCENT, { bold: true, x: m + 10, maxW: cw - 20 })
+      // Table
+      drawTable(ctx, step.rows)
       ctx.y += 6
 
-      // Two columns
-      const colY = ctx.y
-      const lx = m + 10
-      const rx = m + 10 + colW + 8
+      // Result box with accent left bar
+      ensure(ctx, 20)
+      const rText = `Resultat : ${step.result}`
+      const rLines = doc.splitTextToSize(rText, cw - 18) as string[]
+      const bH = rLines.length * 4.5 + 12
 
-      // Left: Comment
-      doc.setFontSize(7)
-      doc.setTextColor(...MUTED)
-      doc.setFont('helvetica', 'bold')
-      doc.text('COMMENT LE FAIRE', lx, ctx.y)
-      ctx.y += 4
-      text(ctx, row.how, 8.5, LIGHT, { x: lx, maxW: colW })
-      const leftEnd = ctx.y
+      doc.setFillColor(...ACCENT)
+      doc.setGState(doc.GState({ opacity: 0.08 }))
+      doc.roundedRect(m, ctx.y, cw, bH, 3, 3, 'F')
+      doc.setGState(doc.GState({ opacity: 1 }))
+      // Accent left bar on result
+      doc.setFillColor(...ACCENT)
+      doc.rect(m, ctx.y, 2.5, bH, 'F')
 
-      // Right: Pourquoi
-      if (row.why) {
-        ctx.y = colY
-        doc.setFontSize(7)
-        doc.setTextColor(...MUTED)
-        doc.setFont('helvetica', 'bold')
-        doc.text("POURQUOI C'EST IMPORTANT", rx, ctx.y)
-        ctx.y += 4
-        text(ctx, row.why, 8.5, LIGHT, { x: rx, maxW: colW })
+      ctx.y += 7
+      doc.setFontSize(8.5)
+      doc.setTextColor(...ACCENT)
+      doc.setFont('helvetica', 'normal')
+      for (const l of rLines) {
+        doc.text(l, m + 10, ctx.y)
+        ctx.y += 4.5
       }
-
-      ctx.y = Math.max(ctx.y, leftEnd)
-      ctx.y = top + cardH + 5
-    })
-
-    // Result box
-    ensure(ctx, 20)
-    const rText = `Resultat : ${step.result}`
-    const rLines = doc.splitTextToSize(rText, cw - 20) as string[]
-    const bH = rLines.length * 4.5 + 12
-
-    doc.setFillColor(...ACCENT)
-    doc.setGState(doc.GState({ opacity: 0.1 }))
-    doc.roundedRect(m, ctx.y, cw, bH, 3, 3, 'F')
-    doc.setGState(doc.GState({ opacity: 1 }))
-
-    ctx.y += 7
-    doc.setFontSize(8.5)
-    doc.setTextColor(...ACCENT)
-    doc.setFont('helvetica', 'normal')
-    for (const l of rLines) {
-      doc.text(l, m + 10, ctx.y)
-      ctx.y += 4.5
+      ctx.y += 14
     }
-    ctx.y += 18
+
+    // Space between pillars
+    ctx.y += 6
   }
 
   // ── CHECKLIST ──
