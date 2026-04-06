@@ -17,6 +17,26 @@ const ORANGE: RGB = [249, 115, 22]
 
 type RGB = [number, number, number]
 
+// ── CORRECTION 1: sanitize accents ──
+function sanitize(s: string): string {
+  return s
+    .replace(/é|è|ê|ë/g, 'e')
+    .replace(/à|â|ä/g, 'a')
+    .replace(/ù|û|ü/g, 'u')
+    .replace(/î|ï/g, 'i')
+    .replace(/ô|ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .replace(/É|È|Ê/g, 'E')
+    .replace(/À|Â/g, 'A')
+    .replace(/Ù|Û/g, 'U')
+    .replace(/Î/g, 'I')
+    .replace(/Ô/g, 'O')
+    .replace(/Ç/g, 'C')
+    .replace(/«|»/g, '"')
+    .replace(/\u2019/g, "'")
+    .replace(/\u2014/g, '-')
+}
+
 function scoreColor(score: number): RGB {
   if (score <= 33) return RED
   if (score <= 66) return ORANGE
@@ -54,7 +74,7 @@ function text(ctx: Ctx, s: string, size: number, color: RGB, opts?: {
   doc.setTextColor(...color)
   doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal')
 
-  const lines = doc.splitTextToSize(s, maxW) as string[]
+  const lines = doc.splitTextToSize(sanitize(s), maxW) as string[]
   const lh = size * 0.45
 
   for (const line of lines) {
@@ -68,11 +88,6 @@ function text(ctx: Ctx, s: string, size: number, color: RGB, opts?: {
   }
 }
 
-function measure(ctx: Ctx, s: string, size: number, maxW: number): number {
-  ctx.doc.setFontSize(size)
-  return (ctx.doc.splitTextToSize(s, maxW) as string[]).length * size * 0.45
-}
-
 function gauge(ctx: Ctx, label: string, score: number) {
   const { doc, m, cw } = ctx
   ensure(ctx, 22)
@@ -80,13 +95,13 @@ function gauge(ctx: Ctx, label: string, score: number) {
   doc.setFontSize(9.5)
   doc.setTextColor(...LIGHT)
   doc.setFont('helvetica', 'bold')
-  doc.text(label, m, ctx.y)
+  doc.text(sanitize(label), m, ctx.y)
 
   const color = scoreColor(score)
   const { label: lvl } = getLevelLabel(score)
   doc.setTextColor(...color)
   doc.setFont('helvetica', 'normal')
-  doc.text(`${score}% — ${lvl}`, m + cw, ctx.y, { align: 'right' })
+  doc.text(sanitize(`${score}% - ${lvl}`), m + cw, ctx.y, { align: 'right' })
   ctx.y += 5
 
   // bar bg
@@ -100,44 +115,27 @@ function gauge(ctx: Ctx, label: string, score: number) {
   ctx.y += 14
 }
 
-function textItalic(ctx: Ctx, s: string, size: number, color: RGB, opts?: {
-  x?: number; maxW?: number
-}) {
-  const { doc, m, cw } = ctx
-  const x = opts?.x ?? m
-  const maxW = opts?.maxW ?? cw
-  doc.setFontSize(size)
-  doc.setTextColor(...color)
-  doc.setFont('helvetica', 'italic')
-
-  const lines = doc.splitTextToSize(s, maxW) as string[]
-  const lh = size * 0.45
-
-  for (const line of lines) {
-    ensure(ctx, lh + 1)
-    doc.text(line, x, ctx.y)
-    ctx.y += lh
-  }
-}
-
 interface TableRow {
   action: string
   how: string
   why: string
 }
 
+// ── CORRECTION 5: increased padding in drawTable ──
 function drawTable(ctx: Ctx, rows: TableRow[]) {
   const { doc, m, cw } = ctx
-  const pad = 6
+  const cellPadX = 8
+  const cellPadY = 12
+  const lh = 4.8
   const col1W = cw * 0.25
   const col2W = cw * 0.45
   const col3W = cw * 0.30
-  const col1X = m + pad
-  const col2X = m + col1W + pad
-  const col3X = m + col1W + col2W + pad
-  const innerCol1 = col1W - pad * 2
-  const innerCol2 = col2W - pad * 2
-  const innerCol3 = col3W - pad * 2
+  const col1X = m + cellPadX
+  const col2X = m + col1W + cellPadX
+  const col3X = m + col1W + col2W + cellPadX
+  const innerCol1 = col1W - cellPadX * 2
+  const innerCol2 = col2W - cellPadX * 2
+  const innerCol3 = col3W - cellPadX * 2
 
   // ── Header row ──
   ensure(ctx, 14)
@@ -150,9 +148,9 @@ function drawTable(ctx: Ctx, rows: TableRow[]) {
   doc.setFontSize(7)
   doc.setTextColor(...MUTED)
   doc.setFont('helvetica', 'bold')
-  doc.text('CE QUE TU FAIS', col1X, headerY)
-  doc.text('COMMENT LE FAIRE', col2X, headerY)
-  doc.text("POURQUOI C'EST IMPORTANT", col3X, headerY)
+  doc.text(sanitize('CE QUE TU FAIS'), col1X, headerY)
+  doc.text(sanitize('COMMENT LE FAIRE'), col2X, headerY)
+  doc.text(sanitize("POURQUOI C'EST IMPORTANT"), col3X, headerY)
   ctx.y += 10
 
   // Header accent line
@@ -165,57 +163,66 @@ function drawTable(ctx: Ctx, rows: TableRow[]) {
 
   // ── Data rows ──
   rows.forEach((row, ri) => {
-    // Measure row height
-    const h1 = measure(ctx, row.action, 9, innerCol1)
-    const h2 = measure(ctx, row.how, 8.5, innerCol2)
-    const h3 = row.why ? measure(ctx, row.why, 8.5, innerCol3) : 0
-    const rowH = Math.max(h1, h2, h3) + 16 // padding top+bottom
+    // Measure row height with new lh and padding
+    doc.setFontSize(9)
+    const actionLines = doc.splitTextToSize(sanitize(row.action), innerCol1) as string[]
+    doc.setFontSize(8.5)
+    const howLines = doc.splitTextToSize(sanitize(row.how), innerCol2) as string[]
+    const whyLines = row.why ? doc.splitTextToSize(sanitize(row.why), innerCol3) as string[] : []
 
-    ensure(ctx, rowH + 2)
+    const h1 = actionLines.length * lh + cellPadY * 2 + 4
+    const h2 = howLines.length * lh + cellPadY * 2 + 4
+    const h3 = whyLines.length > 0 ? whyLines.length * lh + cellPadY * 2 + 4 : 0
+    const rowH = Math.max(h1, h2, h3)
+
+    ensure(ctx, rowH + 6)
 
     // Alternating background
     const bg = ri % 2 === 0 ? CARD : CARD_ALT
     doc.setFillColor(...bg)
     doc.rect(m, ctx.y, cw, rowH, 'F')
 
-    const cellTop = ctx.y + 8
+    const cellTop = ctx.y + cellPadY
 
     // Col 1: action
-    const savedY = ctx.y
-    ctx.y = cellTop
-    text(ctx, row.action, 9, LIGHT, { bold: true, x: col1X, maxW: innerCol1 })
+    doc.setFontSize(9)
+    doc.setTextColor(...LIGHT)
+    doc.setFont('helvetica', 'bold')
+    let drawY = cellTop
+    for (const line of actionLines) {
+      doc.text(line, col1X, drawY)
+      drawY += lh
+    }
 
     // Col 2: how
-    ctx.y = cellTop
     doc.setFontSize(8.5)
     doc.setTextColor(...SECONDARY)
     doc.setFont('helvetica', 'normal')
-    const howLines = doc.splitTextToSize(row.how, innerCol2) as string[]
+    drawY = cellTop
     for (const line of howLines) {
-      doc.text(line, col2X, ctx.y)
-      ctx.y += 8.5 * 0.45
+      doc.text(line, col2X, drawY)
+      drawY += lh
     }
 
     // Col 3: why (italic)
-    if (row.why) {
-      ctx.y = cellTop
+    if (whyLines.length > 0) {
       doc.setFontSize(8.5)
       doc.setTextColor(...MUTED)
       doc.setFont('helvetica', 'italic')
-      const whyLines = doc.splitTextToSize(row.why, innerCol3) as string[]
+      drawY = cellTop
       for (const line of whyLines) {
-        doc.text(line, col3X, ctx.y)
-        ctx.y += 8.5 * 0.45
+        doc.text(line, col3X, drawY)
+        drawY += lh
       }
     }
 
-    ctx.y = savedY + rowH
+    ctx.y += rowH + 4 // 4px gap between rows
 
     // Row separator
     if (ri < rows.length - 1) {
       doc.setDrawColor(255, 255, 255)
       doc.setGState(doc.GState({ opacity: 0.04 }))
-      doc.line(m, ctx.y, m + cw, ctx.y)
+      doc.line(m, ctx.y - 4, m + cw, ctx.y - 4)
       doc.setGState(doc.GState({ opacity: 1 }))
     }
   })
@@ -245,53 +252,104 @@ export function generatePdf(
   const cw = pw - m * 2
   const ctx: Ctx = { doc, y: 0, pw, ph, m, cw }
 
-  // ── COVER PAGE ──
+  // ══════════════════════════════════════
+  // CORRECTION 2: COVER PAGE
+  // ══════════════════════════════════════
   doc.setFillColor(...DARK)
   doc.rect(0, 0, pw, ph, 'F')
 
   // Logo centered
-  ctx.y = 35
+  ctx.y = 28
   doc.setFontSize(14)
   doc.setTextColor(...ACCENT)
   doc.setFont('helvetica', 'bold')
-  doc.text('Clarte Expat', pw / 2, ctx.y, { align: 'center' })
-  ctx.y += 25
+  doc.text(sanitize('Clarte Expat'), pw / 2, ctx.y, { align: 'center' })
 
-  // Prenom
-  text(ctx, `Bonjour ${prenom}`, 28, LIGHT, { bold: true, align: 'center' })
-  ctx.y += 12
+  // Accent line under logo
+  ctx.y = 36
+  doc.setDrawColor(...ACCENT)
+  doc.setLineWidth(1)
+  doc.line(pw / 2 - 20, ctx.y, pw / 2 + 20, ctx.y)
+  doc.setLineWidth(0.2)
 
-  // Q7 / Q8
+  // "Bonjour [Prenom]"
+  ctx.y = 52
+  doc.setFontSize(32)
+  doc.setTextColor(...LIGHT)
+  doc.setFont('helvetica', 'bold')
+  doc.text(sanitize(`Bonjour ${prenom}`), pw / 2, ctx.y, { align: 'center' })
+
+  // Score global
+  const globalColor = scoreColor(scores.global)
+  ctx.y = 72
+  doc.setFontSize(52)
+  doc.setTextColor(...globalColor)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`${scores.global}%`, pw / 2, ctx.y, { align: 'center' })
+
+  // Label "TON SCORE GLOBAL"
+  ctx.y = 82
+  doc.setFontSize(9)
+  doc.setTextColor(...MUTED)
+  doc.setFont('helvetica', 'bold')
+  doc.text(sanitize('TON SCORE GLOBAL'), pw / 2, ctx.y, { align: 'center' })
+
+  // Score bar global
+  ctx.y = 88
+  const barW = 120
+  const barX = (pw - barW) / 2
+  doc.setFillColor(255, 255, 255)
+  doc.setGState(doc.GState({ opacity: 0.06 }))
+  doc.roundedRect(barX, ctx.y, barW, 6, 3, 3, 'F')
+  doc.setGState(doc.GState({ opacity: 1 }))
+  doc.setFillColor(...globalColor)
+  doc.roundedRect(barX, ctx.y, Math.max(2, (scores.global / 100) * barW), 6, 3, 3, 'F')
+
+  // Space 16px
+  ctx.y = 108
+
+  // Q7 phrase
   const q7 = (answers[7] || 'A') as Answer
   const q8 = (answers[8] || 'A') as Answer
-  text(ctx, q7Phrases[q7], 10, SECONDARY, { align: 'center' })
-  ctx.y += 4
-  text(ctx, q8Phrases[q8], 10, SECONDARY, { align: 'center' })
-  ctx.y += 22
+  doc.setFontSize(10)
+  doc.setTextColor(...SECONDARY)
+  doc.setFont('helvetica', 'normal')
+  const q7Lines = doc.splitTextToSize(sanitize(q7Phrases[q7]), 140) as string[]
+  for (const line of q7Lines) {
+    doc.text(line, pw / 2, ctx.y, { align: 'center' })
+    ctx.y += 4.5
+  }
 
-  // Score gauges
+  // Space 6px
+  ctx.y += 6
+
+  // Q8 phrase
+  const q8Lines = doc.splitTextToSize(sanitize(q8Phrases[q8]), 140) as string[]
+  for (const line of q8Lines) {
+    doc.text(line, pw / 2, ctx.y, { align: 'center' })
+    ctx.y += 4.5
+  }
+
+  // Space 20px
+  ctx.y += 20
+
+  // Separator
+  doc.setDrawColor(255, 255, 255)
+  doc.setGState(doc.GState({ opacity: 0.1 }))
+  doc.line(m, ctx.y, pw - m, ctx.y)
+  doc.setGState(doc.GState({ opacity: 1 }))
+
+  // Space 14px
+  ctx.y += 14
+
+  // 3 pillar gauges
   gauge(ctx, pillarNames[1], scores.p1)
   gauge(ctx, pillarNames[2], scores.p2)
   gauge(ctx, pillarNames[3], scores.p3)
-  ctx.y += 8
 
-  // Pillar intros
-  for (const p of [1, 2, 3] as const) {
-    const sc = p === 1 ? scores.p1 : p === 2 ? scores.p2 : scores.p3
-    const lv = getLevel(sc)
-    ensure(ctx, 22)
-
-    // Accent left bar
-    doc.setFillColor(...ACCENT)
-    doc.rect(m, ctx.y - 4, 2, 12, 'F')
-
-    text(ctx, pillarNames[p], 10, ACCENT, { bold: true, x: m + 7, maxW: cw - 7 })
-    ctx.y += 2
-    text(ctx, pillarIntros[p][lv], 8.5, SECONDARY, { x: m + 7, maxW: cw - 7 })
-    ctx.y += 10
-  }
-
-  // ── PLAN PAGES — organized by pillar ──
+  // ══════════════════════════════════════
+  // PLAN PAGES — organized by pillar
+  // ══════════════════════════════════════
   darkPage(ctx)
 
   text(ctx, "Ton plan d'action en 6 etapes", 22, LIGHT, { bold: true, align: 'center' })
@@ -300,72 +358,132 @@ export function generatePdf(
   ctx.y += 18
 
   const pillars = [
-    { num: 1 as const, score: scores.p1, stepNumbers: [1, 2] },
-    { num: 2 as const, score: scores.p2, stepNumbers: [3] },
-    { num: 3 as const, score: scores.p3, stepNumbers: [4, 5, 6] },
+    { num: 1 as const, name: pillarNames[1], score: scores.p1, stepNumbers: [1, 2] },
+    { num: 2 as const, name: pillarNames[2], score: scores.p2, stepNumbers: [3] },
+    { num: 3 as const, name: pillarNames[3], score: scores.p3, stepNumbers: [4, 5, 6] },
   ]
 
   for (const pillar of pillars) {
     const level = getLevel(pillar.score)
 
-    // ── Pillar header card ──
-    ensure(ctx, 42)
+    // ══════════════════════════════════════
+    // CORRECTION 3: PILLAR HEADER
+    // ══════════════════════════════════════
+    const intro = pillarIntros[pillar.num][level]
+    doc.setFontSize(8.5)
+    const introLines = doc.splitTextToSize(sanitize(intro), cw - 18) as string[]
+    const cardH = 28 + introLines.length * 4.5 + 8
+    ensure(ctx, cardH + 14)
+
     doc.setFillColor(...CARD)
-    doc.roundedRect(m, ctx.y, cw, 38, 3, 3, 'F')
+    doc.roundedRect(m, ctx.y, cw, cardH, 4, 4, 'F')
+
     // Accent left bar
     doc.setFillColor(...ACCENT)
-    doc.rect(m, ctx.y, 3, 38, 'F')
+    doc.rect(m, ctx.y, 4, cardH, 'F')
 
-    const pillarTop = ctx.y
-    ctx.y += 10
-    text(ctx, `PILIER ${pillar.num}`, 8, ACCENT, { bold: true, x: m + 10 })
-    ctx.y += 2
-    text(ctx, pillarNames[pillar.num].toUpperCase(), 13, LIGHT, { bold: true, x: m + 10, maxW: cw - 20 })
-    ctx.y += 3
-    textItalic(ctx, pillarIntros[pillar.num][level], 8.5, SECONDARY, { x: m + 10, maxW: cw - 20 })
-    ctx.y = pillarTop + 38 + 10
+    // Badge "PILIER X"
+    doc.setFillColor(...ACCENT)
+    doc.setGState(doc.GState({ opacity: 0.15 }))
+    doc.roundedRect(m + 12, ctx.y + 8, 36, 10, 3, 3, 'F')
+    doc.setGState(doc.GState({ opacity: 1 }))
+    doc.setFontSize(7.5)
+    doc.setTextColor(...ACCENT)
+    doc.setFont('helvetica', 'bold')
+    doc.text(sanitize(`PILIER ${pillar.num}`), m + 14, ctx.y + 15)
+
+    // Pillar name
+    doc.setFontSize(14)
+    doc.setTextColor(...LIGHT)
+    doc.setFont('helvetica', 'bold')
+    doc.text(sanitize(pillar.name), m + 52, ctx.y + 15)
+
+    // Personalized phrase
+    doc.setFontSize(8.5)
+    doc.setTextColor(...SECONDARY)
+    doc.setFont('helvetica', 'italic')
+    introLines.forEach((line: string, i: number) => {
+      doc.text(line, m + 12, ctx.y + 28 + i * 4.5)
+    })
+
+    ctx.y += cardH + 14
 
     // ── Steps within this pillar ──
     for (const stepNum of pillar.stepNumbers) {
       const step = steps[stepNum - 1]
 
-      // Step header
-      ensure(ctx, 30)
-      text(ctx, `ETAPE ${step.number}`, 7.5, ACCENT, { bold: true })
-      ctx.y += 1
-      text(ctx, step.title, 12, LIGHT, { bold: true })
-      ctx.y += 2
-      let sub = step.subtitle
-      if (step.milestone) sub += ` — ${step.milestone}`
-      textItalic(ctx, sub, 8, MUTED)
-      ctx.y += 8
+      // ══════════════════════════════════════
+      // CORRECTION 4: STEP HEADER
+      // ══════════════════════════════════════
+      ensure(ctx, 28)
+      doc.setFillColor(255, 255, 255)
+      doc.setGState(doc.GState({ opacity: 0.04 }))
+      doc.roundedRect(m, ctx.y, cw, 26, 3, 3, 'F')
+      doc.setGState(doc.GState({ opacity: 1 }))
+
+      // Step number
+      doc.setFontSize(8)
+      doc.setTextColor(...ACCENT)
+      doc.setFont('helvetica', 'bold')
+      doc.text(sanitize(`ETAPE ${step.number}`), m + 10, ctx.y + 10)
+
+      // Step title
+      doc.setFontSize(12)
+      doc.setTextColor(...LIGHT)
+      doc.setFont('helvetica', 'bold')
+      doc.text(sanitize(step.title), m + 10, ctx.y + 20)
+
+      ctx.y += 26
+
+      // Subtitle + milestone
+      if (step.subtitle || step.milestone) {
+        let sub = step.subtitle
+        if (step.milestone) sub += ` - ${step.milestone}`
+        doc.setFontSize(8)
+        doc.setTextColor(...MUTED)
+        doc.setFont('helvetica', 'italic')
+        const subLines = doc.splitTextToSize(sanitize(sub), cw - 10) as string[]
+        subLines.forEach((l: string) => { doc.text(l, m + 10, ctx.y); ctx.y += 4.2 })
+      }
+      ctx.y += 10
 
       // Table
       drawTable(ctx, step.rows)
       ctx.y += 6
 
-      // Result box with accent left bar
-      ensure(ctx, 20)
-      const rText = `Resultat : ${step.result}`
-      const rLines = doc.splitTextToSize(rText, cw - 18) as string[]
-      const bH = rLines.length * 4.5 + 12
+      // ══════════════════════════════════════
+      // CORRECTION 6: RESULT BOX
+      // ══════════════════════════════════════
+      ensure(ctx, 22)
+      const rText = sanitize(`Resultat : ${step.result}`)
+      const rLines = doc.splitTextToSize(rText, cw - 20) as string[]
+      const bH = rLines.length * 5 + 16
 
+      // Background
       doc.setFillColor(...ACCENT)
-      doc.setGState(doc.GState({ opacity: 0.08 }))
+      doc.setGState(doc.GState({ opacity: 0.12 }))
       doc.roundedRect(m, ctx.y, cw, bH, 3, 3, 'F')
       doc.setGState(doc.GState({ opacity: 1 }))
-      // Accent left bar on result
-      doc.setFillColor(...ACCENT)
-      doc.rect(m, ctx.y, 2.5, bH, 'F')
 
-      ctx.y += 7
-      doc.setFontSize(8.5)
+      // Left bar
+      doc.setFillColor(...ACCENT)
+      doc.rect(m, ctx.y, 3.5, bH, 'F')
+
+      // "Resultat :" in bold accent
+      ctx.y += 10
+      doc.setFontSize(9)
       doc.setTextColor(...ACCENT)
+      doc.setFont('helvetica', 'bold')
+      doc.text(sanitize('Resultat :'), m + 10, ctx.y)
+
+      // Result text
       doc.setFont('helvetica', 'normal')
-      for (const l of rLines) {
-        doc.text(l, m + 10, ctx.y)
-        ctx.y += 4.5
-      }
+      const resultOnly = sanitize(step.result)
+      const resultLines = doc.splitTextToSize(resultOnly, cw - 32) as string[]
+      resultLines.forEach((l: string) => {
+        doc.text(l, m + 32, ctx.y)
+        ctx.y += 5
+      })
       ctx.y += 14
     }
 
@@ -373,7 +491,9 @@ export function generatePdf(
     ctx.y += 6
   }
 
-  // ── CHECKLIST ──
+  // ══════════════════════════════════════
+  // CORRECTION 8: CHECKLIST SPACING
+  // ══════════════════════════════════════
   ensure(ctx, 30)
   separator(ctx)
   ctx.y += 5
@@ -382,40 +502,91 @@ export function generatePdf(
   ctx.y += 14
 
   for (const cat of checklist) {
-    ensure(ctx, 16)
-    text(ctx, cat.title, 11, LIGHT, { bold: true })
-    ctx.y += 6
+    ensure(ctx, 20)
+
+    // Category title with background
+    doc.setFillColor(255, 255, 255)
+    doc.setGState(doc.GState({ opacity: 0.04 }))
+    doc.roundedRect(m, ctx.y - 5, cw, 16, 3, 3, 'F')
+    doc.setGState(doc.GState({ opacity: 1 }))
+
+    doc.setFontSize(12)
+    doc.setTextColor(...LIGHT)
+    doc.setFont('helvetica', 'bold')
+    doc.text(sanitize(cat.title), m + 8, ctx.y + 4)
+    ctx.y += 16
 
     for (const item of cat.items) {
-      ensure(ctx, 9)
+      ensure(ctx, 11)
 
-      // Checkbox
+      // Checkbox 5x5
       doc.setDrawColor(...MUTED)
       doc.setLineWidth(0.3)
-      doc.roundedRect(m, ctx.y - 3.2, 4, 4, 1, 1)
+      doc.roundedRect(m, ctx.y - 3.5, 5, 5, 1, 1)
       doc.setLineWidth(0.2)
 
       doc.setFontSize(8.5)
       doc.setTextColor(...LIGHT)
       doc.setFont('helvetica', 'normal')
-      doc.text(item, m + 8, ctx.y)
-      ctx.y += 7
+      doc.text(sanitize(item), m + 9, ctx.y)
+      ctx.y += 9
     }
-    ctx.y += 8
+    ctx.y += 14
   }
 
-  // ── CTA FINAL ──
-  ensure(ctx, 45)
+  // ══════════════════════════════════════
+  // CORRECTION 7: CTA FINAL
+  // ══════════════════════════════════════
+  ensure(ctx, 55)
   separator(ctx)
-  ctx.y += 10
+  ctx.y += 12
 
-  text(ctx, "Tu veux qu'on l'applique ensemble a ta situation precise ?", 11, SECONDARY, { align: 'center' })
-  ctx.y += 8
-  text(ctx, 'Reserve ton appel decouverte gratuit — 20 min', 14, ACCENT, { bold: true, align: 'center' })
-  ctx.y += 6
+  // Card CTA
+  const ctaH = 48
+  doc.setFillColor(...ACCENT)
+  doc.setGState(doc.GState({ opacity: 0.08 }))
+  doc.roundedRect(m, ctx.y, cw, ctaH, 6, 6, 'F')
+  doc.setGState(doc.GState({ opacity: 1 }))
+  doc.setDrawColor(...ACCENT)
+  doc.setLineWidth(0.5)
+  doc.roundedRect(m, ctx.y, cw, ctaH, 6, 6)
+  doc.setLineWidth(0.2)
+
+  // CTA text
+  doc.setFontSize(11)
+  doc.setTextColor(...LIGHT)
+  doc.setFont('helvetica', 'bold')
+  doc.text(
+    sanitize("Tu veux qu'on l'applique ensemble a ta situation ?"),
+    pw / 2, ctx.y + 14,
+    { align: 'center' }
+  )
+
+  // Simulated button
+  const btnW = 110
+  const btnX = (pw - btnW) / 2
+  doc.setFillColor(...ACCENT)
+  doc.roundedRect(btnX, ctx.y + 20, btnW, 14, 4, 4, 'F')
   doc.setFontSize(9)
+  doc.setTextColor(...DARK)
+  doc.setFont('helvetica', 'bold')
+  doc.text(
+    sanitize('Reserve ton appel decouverte gratuit - 20 min'),
+    pw / 2, ctx.y + 29,
+    { align: 'center' }
+  )
+
+  ctx.y += ctaH + 10
+
+  // URL below
+  doc.setFontSize(8)
   doc.setTextColor(...MUTED)
-  doc.text('https://calendly.com/clarte-expat/echange-expatriation-thailande', pw / 2, ctx.y, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.text(
+    'calendly.com/clarte-expat/echange-expatriation-thailande',
+    pw / 2, ctx.y,
+    { align: 'center' }
+  )
 
   // ── FOOTER every page ──
   const total = doc.getNumberOfPages()
@@ -423,7 +594,7 @@ export function generatePdf(
     doc.setPage(i)
     doc.setFontSize(7)
     doc.setTextColor(...MUTED)
-    doc.text('Clarte Expat — go.performiance.fr', m, ph - 10)
+    doc.text(sanitize('Clarte Expat - go.performiance.fr'), m, ph - 10)
     doc.text(`Page ${i} / ${total}`, pw - m, ph - 10, { align: 'right' })
   }
 
