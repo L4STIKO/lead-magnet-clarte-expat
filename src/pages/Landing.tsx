@@ -27,7 +27,7 @@ export default function Landing() {
           {/* H1 */}
           <h1
             className="font-heading font-extrabold"
-            style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 660 }}
+            style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 760 }}
           >
             <span style={{ color: 'var(--text-primary)' }}>Chaque étape pour réussir</span>
             <br />
@@ -39,9 +39,9 @@ export default function Landing() {
             className="font-body"
             style={{
               fontSize: 16,
-              color: '#c8ced8',
+              color: 'var(--text-secondary)',
               lineHeight: 1.7,
-              maxWidth: 520,
+              maxWidth: 680,
               marginBottom: 32,
             }}
           >
@@ -51,7 +51,7 @@ export default function Landing() {
           {/* Stats line */}
           <p
             className="font-body font-medium"
-            style={{ fontSize: 14, color: '#a0a8b4', marginBottom: 40 }}
+            style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 40 }}
           >
             8 questions · 3 min · 100% gratuit
           </p>
@@ -83,7 +83,7 @@ export default function Landing() {
           </button>
 
           {/* Mention */}
-          <p className="font-body" style={{ fontSize: 13, color: '#a0a8b4', marginTop: 16 }}>
+          <p className="font-body" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 16 }}>
             Déjà utilisé par des entrepreneurs français installés en Thaïlande 🇹🇭
           </p>
         </div>

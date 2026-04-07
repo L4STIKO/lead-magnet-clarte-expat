@@ -19,10 +19,11 @@ export default function Plan() {
             backgroundColor: 'rgba(0,217,163,0.12)',
             border: '2px solid rgba(0,217,163,0.3)',
             margin: '0 auto 32px',
-            fontSize: 36,
           }}
         >
-          ✅
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#00d9a3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
 
         {/* Title */}

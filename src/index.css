@@ -11,8 +11,8 @@
   --accent: #00d9a3;
   --accent-dark: #00b589;
   --text-primary: #f2f4f6;
-  --text-secondary: #8892a4;
-  --text-muted: #5a6478;
+  --text-secondary: #c8ced8;
+  --text-muted: #a0a8b4;
   --border: rgba(255,255,255,0.08);
   --border-accent: rgba(0,217,163,0.3);
   --red: #ef4444;
@@ -68,7 +68,7 @@
 /* ── Containers ── */
 .container {
   width: 100%;
-  max-width: 720px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 0 24px;
 }

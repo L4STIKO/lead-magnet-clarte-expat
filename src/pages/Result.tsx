@@ -146,11 +146,36 @@ function InlineForm({
       }}
     >
       {loading ? (
-        <div className="text-center">
-          <p className="font-body font-semibold" style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 16 }}>
+        <div className="text-center" style={{ padding: '16px 0' }}>
+          {/* Circular progress */}
+          <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 20px' }}>
+            <svg width="100" height="100" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+              <circle
+                cx="50" cy="50" r="42" fill="none"
+                stroke="var(--accent)"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 42}
+                strokeDashoffset={2 * Math.PI * 42 * (1 - progress / 100)}
+                style={{ transition: 'stroke-dashoffset 0.2s ease-out' }}
+              />
+            </svg>
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span className="font-heading font-bold" style={{ fontSize: 24, color: 'var(--accent)' }}>
+                {progress}%
+              </span>
+            </div>
+          </div>
+          {/* Label */}
+          <p className="font-body font-semibold" style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
             {progressLabel}
           </p>
-          <div style={{ height: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 100, marginBottom: 10, overflow: 'hidden' }}>
+          {/* Thin bar */}
+          <div style={{ height: 3, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 100, maxWidth: 200, margin: '0 auto', overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${progress}%`,
@@ -159,9 +184,6 @@ function InlineForm({
               transition: 'width 0.15s ease-out',
             }} />
           </div>
-          <p className="font-heading font-bold" style={{ fontSize: 28, color: 'var(--accent)' }}>
-            {progress}%
-          </p>
         </div>
       ) : (
         <>
