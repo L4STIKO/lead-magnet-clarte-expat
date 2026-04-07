@@ -130,7 +130,7 @@ function buildEmailHtml(prenom: string, pdfUrl: string): string {
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5; padding:40px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; padding:40px;">
+        <table width="700" cellpadding="0" cellspacing="0" style="max-width:700px; width:100%; background-color:#ffffff; border-radius:12px; padding:40px;">
 
           <!-- Logo -->
           <tr>
@@ -203,7 +203,7 @@ function buildEmailHtml(prenom: string, pdfUrl: string): string {
             <td style="border-top:1px solid #e5e5e5; padding-top:20px;">
               <p style="color:#999999; font-size:12px; margin:0; line-height:1.5;">
                 Grégoire · Clarté Expat<br>
-                go.performiance.fr
+                <a href="https://performiance.fr" target="_blank" style="color:#00b589; text-decoration:none;">performiance.fr</a>
               </p>
             </td>
           </tr>

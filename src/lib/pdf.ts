@@ -516,7 +516,10 @@ export function generatePdf(
     doc.setPage(i)
     doc.setFontSize(7)
     doc.setTextColor(...MUTED)
-    doc.text(sanitize('Clarte Expat - go.performiance.fr'), m, ph - 8)
+    const footerText = sanitize('Clarte Expat - performiance.fr')
+    doc.text(footerText, m, ph - 8)
+    const footerW = doc.getTextWidth(footerText)
+    doc.link(m, ph - 11, footerW, 5, { url: 'https://performiance.fr' })
     doc.text(`Page ${i} / ${total}`, pw - m, ph - 8, { align: 'right' })
   }
 
