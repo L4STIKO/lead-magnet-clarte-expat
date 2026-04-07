@@ -27,48 +27,34 @@ export default function Landing() {
           {/* H1 */}
           <h1
             className="font-heading font-extrabold"
-            style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 600 }}
+            style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 660 }}
           >
-            <span style={{ color: 'var(--text-primary)' }}>Ne pars pas de France</span>
+            <span style={{ color: 'var(--text-primary)' }}>Chaque étape pour réussir</span>
             <br />
-            <span style={{ color: 'var(--accent)' }}>sans ce plan</span>
+            <span style={{ color: 'var(--accent)' }}>ton expatriation en Thaïlande.</span>
           </h1>
 
           {/* Subtitle */}
           <p
             className="font-body"
             style={{
-              fontSize: 18,
-              color: 'var(--text-secondary)',
+              fontSize: 16,
+              color: '#c8ced8',
               lineHeight: 1.7,
-              maxWidth: 480,
-              marginBottom: 48,
+              maxWidth: 520,
+              marginBottom: 32,
             }}
           >
-            Réponds à 8 questions et reçois ton plan personnalisé pour sortir proprement
-            de France, ne plus payer d'impôts là-bas et t'installer en Thaïlande.
+            Changer de résidence fiscale · Structurer son activité à l'étranger · S'installer en Thaïlande
           </p>
 
-          {/* Stats row */}
-          <div
-            className="flex flex-wrap justify-center mb-12"
-            style={{ gap: 56 }}
+          {/* Stats line */}
+          <p
+            className="font-body font-medium"
+            style={{ fontSize: 14, color: '#a0a8b4', marginBottom: 40 }}
           >
-            {[
-              { value: '8', label: 'Questions' },
-              { value: '3 min', label: 'Durée' },
-              { value: '100%', label: 'Gratuit' },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="font-heading font-extrabold" style={{ fontSize: 40, color: 'var(--accent)' }}>
-                  {stat.value}
-                </div>
-                <div className="font-body" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
+            8 questions · 3 min · 100% gratuit
+          </p>
 
           {/* CTA */}
           <button
@@ -97,8 +83,8 @@ export default function Landing() {
           </button>
 
           {/* Mention */}
-          <p className="font-body" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 16 }}>
-            Déjà utilisé par des entrepreneurs français installés à Bangkok 🇹🇭
+          <p className="font-body" style={{ fontSize: 13, color: '#a0a8b4', marginTop: 16 }}>
+            Déjà utilisé par des entrepreneurs français installés en Thaïlande 🇹🇭
           </p>
         </div>
       </section>
