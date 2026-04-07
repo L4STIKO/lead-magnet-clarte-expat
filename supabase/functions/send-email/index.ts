@@ -126,23 +126,23 @@ function buildEmailHtml(prenom: string, pdfUrl: string): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0; padding:0; background-color:#121823; font-family:Arial, Helvetica, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#121823; padding:40px 20px;">
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family:Arial, Helvetica, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5; padding:40px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%;">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; padding:40px;">
 
           <!-- Logo -->
           <tr>
             <td style="padding-bottom:30px;">
-              <span style="color:#00d9a3; font-size:20px; font-weight:bold;">🧭 Clarté Expat</span>
+              <span style="color:#00b589; font-size:20px; font-weight:bold;">🧭 Clarté Expat</span>
             </td>
           </tr>
 
           <!-- Titre -->
           <tr>
             <td style="padding-bottom:20px;">
-              <h1 style="color:#f2f4f6; font-size:26px; margin:0; line-height:1.3;">
+              <h1 style="color:#1a1a1a; font-size:26px; margin:0; line-height:1.3;">
                 ${prenom}, ton plan d'expatriation est prêt
               </h1>
             </td>
@@ -150,7 +150,7 @@ function buildEmailHtml(prenom: string, pdfUrl: string): string {
 
           <!-- Corps -->
           <tr>
-            <td style="color:#a0a5af; font-size:16px; line-height:1.6; padding-bottom:30px;">
+            <td style="color:#555555; font-size:16px; line-height:1.6; padding-bottom:30px;">
               Tu as répondu aux 8 questions — ton plan d'action personnalisé a été généré.<br><br>
               Il contient les 6 étapes concrètes pour sortir proprement de France, structurer ton activité et t'installer en Thaïlande sereinement.
             </td>
@@ -174,8 +174,8 @@ function buildEmailHtml(prenom: string, pdfUrl: string): string {
 
           <!-- Separator -->
           <tr>
-            <td style="border-top:1px solid rgba(255,255,255,0.1); padding-top:30px; padding-bottom:20px;">
-              <p style="color:#a0a5af; font-size:15px; line-height:1.6; margin:0;">
+            <td style="border-top:1px solid #e5e5e5; padding-top:30px; padding-bottom:20px;">
+              <p style="color:#555555; font-size:15px; line-height:1.6; margin:0;">
                 Tu veux qu'on applique ce plan ensemble à ta situation précise ?<br>
                 Réserve un échange gratuit de 20 minutes :
               </p>
@@ -188,7 +188,7 @@ function buildEmailHtml(prenom: string, pdfUrl: string): string {
               <a href="${calendlyUrl}" target="_blank" style="
                 display:inline-block;
                 border:2px solid #00d9a3;
-                color:#00d9a3;
+                color:#00b589;
                 font-size:15px;
                 font-weight:bold;
                 padding:14px 28px;
@@ -200,8 +200,8 @@ function buildEmailHtml(prenom: string, pdfUrl: string): string {
 
           <!-- Footer -->
           <tr>
-            <td style="border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
-              <p style="color:#666; font-size:12px; margin:0; line-height:1.5;">
+            <td style="border-top:1px solid #e5e5e5; padding-top:20px;">
+              <p style="color:#999999; font-size:12px; margin:0; line-height:1.5;">
                 Grégoire · Clarté Expat<br>
                 go.performiance.fr
               </p>
