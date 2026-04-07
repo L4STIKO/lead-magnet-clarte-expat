@@ -16,7 +16,7 @@ function useCountUp(target: number, duration = 1200) {
     function tick(now: number) {
       const elapsed = now - start
       const t = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - t, 4) // easeOutQuart
+      const eased = 1 - Math.pow(1 - t, 4)
       setValue(Math.round(eased * target))
       if (t < 1) requestAnimationFrame(tick)
     }
@@ -31,12 +31,133 @@ function scoreColorVar(score: number) {
   return 'var(--green)'
 }
 
+function getScoreText(score: number): string {
+  if (score <= 33)
+    return "Bonne nouvelle — tu es exactement au bon endroit. Ton plan personnalisé te donne les étapes dans le bon ordre pour construire ton expatriation sur des bases solides dès le départ."
+  if (score <= 66)
+    return "Tu as les bonnes intuitions — il reste à aligner les pièces entre elles. Ton plan personnalisé identifie exactement les zones à clarifier pour que tout soit cohérent."
+  return "Tu es bien avancé — l'enjeu maintenant c'est de valider que tout tient ensemble. Ton plan personnalisé te montre exactement ce qu'il reste à sécuriser."
+}
+
 const PILLAR_EMOJIS = { 1: '🇹🇭', 2: '💼', 3: '📋' } as const
+
+// Fake plan data for blurred preview
+const FAKE_ROWS = [
+  {
+    pillar: 'PILIER 1 — TON INSTALLATION EN THAÏLANDE',
+    rows: [
+      ['Choisir ton lieu de vie', 'Compare les villes selon ton style de vie et tes objectifs business', 'Chaque ville a un impact direct sur ton quotidien'],
+      ['Identifier le bon visa', 'Analyse les options DTV, LTR ou Non-Imm B selon ton profil', 'Le mauvais visa peut bloquer ton installation'],
+      ['Anticiper ton budget réel', 'Estime tes dépenses mensuelles selon ton style de vie cible', 'Beaucoup sous-estiment leur budget les premiers mois'],
+    ],
+  },
+  {
+    pillar: 'PILIER 2 — TON ACTIVITÉ',
+    rows: [
+      ['Structurer ton activité', 'Définis la structure juridique adaptée à ton profil et tes clients', 'Le mauvais choix coûte cher à corriger après coup'],
+      ['Organiser ta facturation', 'Mets en place un système clair entre compte pro et perso', 'Mélanger pro et perso affaiblit ta substance économique'],
+    ],
+  },
+]
+
+function FakeTable({ pillar, rows }: { pillar: string; rows: string[][] }) {
+  const headerStyle: React.CSSProperties = {
+    padding: '8px 10px',
+    fontSize: 11,
+    color: 'var(--accent)',
+    fontWeight: 700,
+    fontFamily: "'Poppins', sans-serif",
+    borderBottom: '1px solid var(--accent)',
+  }
+  const cellStyle = (col: number, ri: number): React.CSSProperties => ({
+    padding: '10px 10px',
+    fontSize: 12,
+    fontFamily: "'Poppins', sans-serif",
+    color: col === 0 ? 'var(--text-primary)' : col === 1 ? 'var(--text-secondary)' : 'var(--text-muted)',
+    fontWeight: col === 0 ? 600 : 400,
+    fontStyle: col === 2 ? 'italic' : 'normal',
+    backgroundColor: ri % 2 === 0 ? 'var(--bg-card)' : 'rgba(22,30,42,0.8)',
+    borderBottom: '1px solid rgba(42,54,74,0.6)',
+  })
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{
+        backgroundColor: 'rgba(35,47,66,0.8)',
+        padding: '8px 12px',
+        borderRadius: '8px 8px 0 0',
+        borderLeft: '3px solid var(--accent)',
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', fontFamily: "'Poppins', sans-serif" }}>
+          {pillar}
+        </span>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid rgba(42,54,74,0.6)' }}>
+        <thead>
+          <tr style={{ backgroundColor: 'rgba(35,47,66,0.9)' }}>
+            <th style={{ ...headerStyle, width: '24%', textAlign: 'left' }}>CE QUE TU FAIS</th>
+            <th style={{ ...headerStyle, width: '44%', textAlign: 'left' }}>COMMENT LE FAIRE</th>
+            <th style={{ ...headerStyle, width: '32%', textAlign: 'left' }}>POURQUOI</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri}>
+              {row.map((cell, ci) => (
+                <td key={ci} style={cellStyle(ci, ri)}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function InlineForm({
+  formRef,
+  showForm,
+  onSubmit,
+  loading,
+  error,
+}: {
+  formRef: React.RefObject<HTMLDivElement | null>
+  showForm: boolean
+  onSubmit: (prenom: string, email: string) => void
+  loading: boolean
+  error: string | null
+}) {
+  if (!showForm) return null
+  return (
+    <div
+      ref={formRef}
+      className="animate-in"
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border-accent)',
+        borderRadius: 'var(--radius-xl)',
+        padding: 32,
+        maxWidth: 420,
+        margin: '24px auto 0',
+      }}
+    >
+      <h3 className="font-heading font-bold text-center" style={{ fontSize: 20, marginBottom: 20, color: 'var(--text-primary)' }}>
+        Reçois ton plan personnalisé
+      </h3>
+      <LeadForm onSubmit={onSubmit} loading={loading} />
+      {error && (
+        <p className="text-center" style={{ color: 'var(--red)', fontSize: 13, marginTop: 12 }}>{error}</p>
+      )}
+    </div>
+  )
+}
 
 export default function Result() {
   const navigate = useNavigate()
-  const formRef = useRef<HTMLDivElement>(null)
-  const [showForm, setShowForm] = useState(false)
+  const formRef1 = useRef<HTMLDivElement>(null)
+  const formRef2 = useRef<HTMLDivElement>(null)
+  const [showForm1, setShowForm1] = useState(false)
+  const [showForm2, setShowForm2] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [barsVisible, setBarsVisible] = useState(false)
@@ -54,11 +175,14 @@ export default function Result() {
     return () => clearTimeout(timer)
   }, [answers, navigate])
 
-  function scrollToForm() {
-    setShowForm(true)
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
+  function openForm1() {
+    setShowForm1(true)
+    setTimeout(() => formRef1.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100)
+  }
+
+  function openForm2() {
+    setShowForm2(true)
+    setTimeout(() => formRef2.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100)
   }
 
   async function handleSubmit(prenom: string, email: string) {
@@ -119,28 +243,27 @@ export default function Result() {
           }} />
         </div>
 
-        <h2 className="font-heading font-bold" style={{ fontSize: 22, color: 'var(--text-primary)', margin: '20px 0 32px' }}>
+        <h2 className="font-heading font-bold" style={{ fontSize: 22, color: 'var(--text-primary)', margin: '20px 0 24px' }}>
           {globalLabel}
         </h2>
 
-        {/* Explanatory text card */}
+        {/* Personalized text based on score */}
         <div style={{
           backgroundColor: 'var(--bg-card)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
-          padding: 32,
+          padding: '24px 28px',
           maxWidth: 580,
-          margin: '0 auto 40px',
+          margin: '0 auto 32px',
         }}>
-          <p className="font-body" style={{ fontSize: 16, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-            Ce score reflète ta préparation sur les 3 piliers clés de ton expatriation en Thaïlande.
-            Plus ton score est élevé, plus tu es prêt à partir sereinement.
+          <p className="font-body" style={{ fontSize: 16, color: 'var(--text-secondary)', lineHeight: 1.8, textAlign: 'center' }}>
+            {getScoreText(scores.global)}
           </p>
         </div>
 
         {/* CTA 1 */}
         <button
-          onClick={scrollToForm}
+          onClick={openForm1}
           className="font-body font-bold cursor-pointer"
           style={{
             fontSize: 17,
@@ -150,7 +273,6 @@ export default function Result() {
             borderRadius: 100,
             border: 'none',
             boxShadow: '0 8px 40px rgba(0,217,163,0.3)',
-            marginBottom: 56,
             transition: 'all 0.2s ease',
           }}
           onMouseEnter={(e) => {
@@ -164,6 +286,11 @@ export default function Result() {
         >
           Télécharger mon plan d'expatriation personnalisé →
         </button>
+
+        {/* Inline form after CTA 1 */}
+        <InlineForm formRef={formRef1} showForm={showForm1} onSubmit={handleSubmit} loading={loading} error={error} />
+
+        <div style={{ height: 56 }} />
       </section>
 
       {/* Pillar detail section */}
@@ -225,7 +352,7 @@ export default function Result() {
             Reçois ton plan d'action personnalisé
           </h3>
           <button
-            onClick={scrollToForm}
+            onClick={openForm2}
             className="font-body font-bold cursor-pointer"
             style={{
               fontSize: 15,
@@ -241,18 +368,18 @@ export default function Result() {
           >
             Débloquer mon plan →
           </button>
+
+          {/* Inline form after CTA 2 */}
+          <InlineForm formRef={formRef2} showForm={showForm2} onSubmit={handleSubmit} loading={loading} error={error} />
         </div>
       </section>
 
-      {/* Blurred content */}
-      <section className="container" style={{ position: 'relative', overflow: 'hidden', marginBottom: 0 }}>
-        <div style={{ filter: 'blur(5px)', opacity: 0.35, pointerEvents: 'none', padding: '32px 0' }}>
-          <div style={{ height: 18, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8, width: '75%', marginBottom: 12 }} />
-          <div style={{ height: 14, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, width: '100%', marginBottom: 10 }} />
-          <div style={{ height: 14, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, width: '90%', marginBottom: 10 }} />
-          <div style={{ height: 18, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8, width: '65%', marginTop: 24, marginBottom: 12 }} />
-          <div style={{ height: 14, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, width: '100%', marginBottom: 10 }} />
-          <div style={{ height: 14, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, width: '85%' }} />
+      {/* Blurred fake plan preview */}
+      <section className="container" style={{ position: 'relative', overflow: 'hidden', marginBottom: 0, borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ filter: 'blur(6px)', opacity: 0.5, pointerEvents: 'none', padding: '24px 0' }}>
+          {FAKE_ROWS.map((section, i) => (
+            <FakeTable key={i} pillar={section.pillar} rows={section.rows} />
+          ))}
         </div>
         <div
           className="flex flex-col items-center justify-center text-center"
@@ -263,47 +390,40 @@ export default function Result() {
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
             borderRadius: 'var(--radius-lg)',
-            padding: '36px 48px',
+            padding: '32px 40px',
           }}
         >
-          <span style={{ fontSize: 36, marginBottom: 16 }}>🔒</span>
-          <p className="font-body" style={{ fontSize: 15, color: 'var(--text-secondary)' }}>
-            Saisis ton email pour débloquer ton plan d'action personnalisé
+          <span style={{ fontSize: 40, marginBottom: 16 }}>🔒</span>
+          <p className="font-body font-medium" style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 20 }}>
+            Saisis ton email pour débloquer ton plan complet
           </p>
+          <button
+            onClick={openForm2}
+            className="font-body font-bold cursor-pointer"
+            style={{
+              fontSize: 14,
+              backgroundColor: 'var(--accent)',
+              color: '#121823',
+              padding: '12px 32px',
+              borderRadius: 100,
+              border: 'none',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--accent-dark)'
+              e.currentTarget.style.transform = 'translateY(-2px)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--accent)'
+              e.currentTarget.style.transform = 'translateY(0)'
+            }}
+          >
+            Débloquer mon plan →
+          </button>
         </div>
       </section>
 
-      {/* Lead form */}
-      <section className="container">
-        <div
-          ref={formRef}
-          style={{
-            opacity: showForm ? 1 : 0,
-            pointerEvents: showForm ? 'auto' : 'none',
-            transition: 'opacity 0.5s ease',
-            backgroundColor: 'var(--bg-card)',
-            border: '1px solid var(--border-accent)',
-            borderRadius: 'var(--radius-xl)',
-            padding: 40,
-            maxWidth: 460,
-            margin: '48px auto 80px',
-          }}
-        >
-          <h3 className="font-heading font-bold text-center" style={{ fontSize: 22, marginBottom: 8, color: 'var(--text-primary)' }}>
-            Reçois ton plan personnalisé
-          </h3>
-          <p className="font-body text-center" style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 28 }}>
-            Ton prénom et ton email — c'est tout ce qu'il nous faut.
-          </p>
-          <LeadForm onSubmit={handleSubmit} loading={loading} />
-          {error && (
-            <p className="text-center" style={{ color: 'var(--red)', fontSize: 13, marginTop: 12 }}>{error}</p>
-          )}
-          <p className="font-body text-center" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12 }}>
-            Aucun spam. Tu reçois uniquement ton plan.
-          </p>
-        </div>
-      </section>
+      <div style={{ height: 80 }} />
 
       <style>{`
         @media (max-width: 639px) {
