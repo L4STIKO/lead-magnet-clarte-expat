@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // ── 1. Insert contact ──
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { error: insertError } = await supabase.from("contacts").insert({
+    const { data: insertedContact, error: insertError } = await supabase.from("contacts").insert({
       prenom: body.prenom,
       email: body.email,
       q1: body.q1,
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       pdf_url: body.pdf_url,
       pdf_generated: true,
       email_sent: false,
-    });
+    }).select("id").single();
 
     if (insertError) {
       console.error("Insert error:", insertError);
@@ -66,6 +66,15 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Insert contact échoué", details: insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // ── 1b. Log activity for dashboard ──
+    if (insertedContact?.id) {
+      await supabase.from("activity_log").insert({
+        contact_id: insertedContact.id,
+        type: "stage_change",
+        metadata: { from: null, to: "lead", source: "lead-magnet" },
+      });
     }
 
     // ── 2. Send email via Resend ──
