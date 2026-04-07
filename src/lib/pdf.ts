@@ -5,21 +5,26 @@ import { q7Phrases, q8Phrases, pillarIntros, getLevel, getLevelLabel } from '../
 import type { Scores } from './scoring'
 
 // ── Colors ──
-const DARK: RGB = [18, 24, 35]           // #121823
-const CARD: RGB = [26, 35, 50]           // #1a2332
-const CARD_ALT: RGB = [22, 30, 42]       // alternating row
-const ACCENT: RGB = [0, 217, 163]        // #00d9a3
-const LIGHT: RGB = [242, 244, 246]       // #f2f4f6
-const SECONDARY: RGB = [136, 146, 164]   // #8892a4
-const MUTED: RGB = [90, 100, 120]        // #5a6478
+type RGB = [number, number, number]
+const DARK: RGB = [18, 24, 35]
+const CARD: RGB = [26, 35, 50]
+const CARD2: RGB = [22, 30, 44]
+const HEADER: RGB = [35, 47, 66]
+const ACCENT: RGB = [0, 217, 163]
+const LIGHT: RGB = [242, 244, 246]
+const SECOND: RGB = [200, 206, 216]
+const TERTIARY: RGB = [160, 168, 180]
+const MUTED: RGB = [110, 118, 130]
+const BORDER: RGB = [42, 54, 74]
 const RED: RGB = [239, 68, 68]
 const ORANGE: RGB = [249, 115, 22]
-const CARD_HEADER: RGB = [35, 47, 66]    // #232f42 — header tableau
-const BORDER: RGB = [42, 54, 74]         // #2a364a — bordures grille
 
-type RGB = [number, number, number]
+function scoreColor(s: number): RGB {
+  if (s <= 33) return RED
+  if (s <= 66) return ORANGE
+  return ACCENT
+}
 
-// ── CORRECTION 1: sanitize accents ──
 function sanitize(s: string): string {
   return s
     .replace(/é|è|ê|ë/g, 'e')
@@ -39,212 +44,141 @@ function sanitize(s: string): string {
     .replace(/\u2014/g, '-')
 }
 
-function scoreColor(score: number): RGB {
-  if (score <= 33) return RED
-  if (score <= 66) return ORANGE
-  return ACCENT
-}
+// ── Context ──
+interface Ctx { doc: jsPDF; y: number; pw: number; ph: number; m: number; cw: number }
 
-// ── PDF Context ──
-interface Ctx {
-  doc: jsPDF
-  y: number
-  pw: number  // page width
-  ph: number  // page height
-  m: number   // margin
-  cw: number  // content width
-}
-
-function darkPage(ctx: Ctx) {
+function newPage(ctx: Ctx) {
   ctx.doc.addPage()
   ctx.doc.setFillColor(...DARK)
   ctx.doc.rect(0, 0, ctx.pw, ctx.ph, 'F')
-  ctx.y = 28
+  ctx.y = 22
 }
 
 function ensure(ctx: Ctx, h: number) {
-  if (ctx.y + h > ctx.ph - 22) darkPage(ctx)
+  if (ctx.y + h > ctx.ph - 20) newPage(ctx)
 }
 
-function text(ctx: Ctx, s: string, size: number, color: RGB, opts?: {
-  bold?: boolean; x?: number; maxW?: number; align?: 'left' | 'center'
-}) {
-  const { doc, m, cw } = ctx
-  const x = opts?.x ?? m
-  const maxW = opts?.maxW ?? cw
-  doc.setFontSize(size)
-  doc.setTextColor(...color)
-  doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal')
-
-  const lines = doc.splitTextToSize(sanitize(s), maxW) as string[]
-  const lh = size * 0.45
-
-  for (const line of lines) {
-    ensure(ctx, lh + 1)
-    if (opts?.align === 'center') {
-      doc.text(line, ctx.pw / 2, ctx.y, { align: 'center' })
-    } else {
-      doc.text(line, x, ctx.y)
-    }
-    ctx.y += lh
-  }
-}
-
-function gauge(ctx: Ctx, label: string, score: number) {
-  const { doc, m, cw } = ctx
-  ensure(ctx, 22)
-
-  doc.setFontSize(9.5)
-  doc.setTextColor(...LIGHT)
-  doc.setFont('helvetica', 'bold')
-  doc.text(sanitize(label), m, ctx.y)
-
-  const color = scoreColor(score)
-  const { label: lvl } = getLevelLabel(score)
-  doc.setTextColor(...color)
-  doc.setFont('helvetica', 'normal')
-  doc.text(sanitize(`${score}% - ${lvl}`), m + cw, ctx.y, { align: 'right' })
-  ctx.y += 5
-
-  // bar bg
-  doc.setFillColor(255, 255, 255)
-  doc.setGState(doc.GState({ opacity: 0.06 }))
-  doc.roundedRect(m, ctx.y, cw, 7, 3, 3, 'F')
-  // bar fill
-  doc.setGState(doc.GState({ opacity: 1 }))
-  doc.setFillColor(...color)
-  doc.roundedRect(m, ctx.y, Math.max(2, (score / 100) * cw), 7, 3, 3, 'F')
-  ctx.y += 14
-}
-
-function drawTable(ctx: Ctx, rows: ActionRow[]) {
-  const { doc, m, cw } = ctx
-  const col1W = cw * 0.24
-  const col2W = cw * 0.44
-  const col3W = cw * 0.32
-  const padX = 7
-  const padY = 7
-  const lh = 4.6
-
-  const colXs = [m, m + col1W, m + col1W + col2W]
-  const colWs = [col1W - padX * 2, col2W - padX * 2, col3W - padX * 2]
-
-  // ── HEADER TABLEAU ──
-  const headerH = 13
-  ensure(ctx, headerH)
-  const headerY = ctx.y
-
-  // Fond header
-  doc.setFillColor(...CARD_HEADER)
-  doc.rect(m, headerY, cw, headerH, 'F')
-
-  // Textes header
-  const headers = ['CE QUE TU FAIS', 'COMMENT LE FAIRE', "POURQUOI C'EST IMPORTANT"]
-  doc.setFontSize(7)
-  doc.setTextColor(...ACCENT)
-  doc.setFont('helvetica', 'bold')
-  headers.forEach((h, i) => {
-    doc.text(sanitize(h), colXs[i] + padX, headerY + 9)
-  })
-
-  // Ligne accent sous header
-  doc.setDrawColor(...ACCENT)
-  doc.setLineWidth(0.5)
-  doc.line(m, headerY + headerH, m + cw, headerY + headerH)
-
-  // Lignes verticales header
-  doc.setDrawColor(...ACCENT)
-  doc.setGState(doc.GState({ opacity: 0.25 }))
-  doc.setLineWidth(0.3)
-  doc.line(m + col1W, headerY, m + col1W, headerY + headerH)
-  doc.line(m + col1W + col2W, headerY, m + col1W + col2W, headerY + headerH)
-  doc.setGState(doc.GState({ opacity: 1 }))
-
-  ctx.y = headerY + headerH
-
-  // Track table start for outer border
-  const tableTopY = headerY
-
-  // ── LIGNES DE DONNÉES ──
-  rows.forEach((row, ri) => {
-    doc.setFontSize(8.5)
-    const l1 = doc.splitTextToSize(sanitize(row.action), colWs[0]) as string[]
-    const l2 = doc.splitTextToSize(sanitize(row.how), colWs[1]) as string[]
-    const l3 = doc.splitTextToSize(sanitize(row.why), colWs[2]) as string[]
-    const rowH = Math.max(l1.length, l2.length, l3.length) * lh + padY * 2
-
-    ensure(ctx, rowH)
-    const rowY = ctx.y
-
-    // Fond alternance
-    const bg = ri % 2 === 0 ? CARD : CARD_ALT
-    doc.setFillColor(...bg)
-    doc.rect(m, rowY, cw, rowH, 'F')
-
-    // Col 1 — action bold blanc
-    doc.setFontSize(9)
-    doc.setTextColor(...LIGHT)
-    doc.setFont('helvetica', 'bold')
-    l1.forEach((line: string, li: number) => {
-      doc.text(line, colXs[0] + padX, rowY + padY + li * lh + 3.5)
-    })
-
-    // Col 2 — how normal secondary
-    doc.setFontSize(8.5)
-    doc.setTextColor(...SECONDARY)
-    doc.setFont('helvetica', 'normal')
-    l2.forEach((line: string, li: number) => {
-      doc.text(line, colXs[1] + padX, rowY + padY + li * lh + 3.5)
-    })
-
-    // Col 3 — why italic muted
-    doc.setFontSize(8.5)
-    doc.setTextColor(...MUTED)
-    doc.setFont('helvetica', 'italic')
-    l3.forEach((line: string, li: number) => {
-      doc.text(line, colXs[2] + padX, rowY + padY + li * lh + 3.5)
-    })
-
-    // Lignes verticales de grille
-    doc.setDrawColor(...BORDER)
-    doc.setGState(doc.GState({ opacity: 0.6 }))
-    doc.setLineWidth(0.3)
-    doc.line(m + col1W, rowY, m + col1W, rowY + rowH)
-    doc.line(m + col1W + col2W, rowY, m + col1W + col2W, rowY + rowH)
-    doc.setGState(doc.GState({ opacity: 1 }))
-
-    // Ligne horizontale entre lignes
-    doc.setDrawColor(...BORDER)
-    doc.setGState(doc.GState({ opacity: 0.8 }))
-    doc.setLineWidth(0.25)
-    doc.line(m, rowY + rowH, m + cw, rowY + rowH)
-    doc.setGState(doc.GState({ opacity: 1 }))
-
-    ctx.y = rowY + rowH
-  })
-
-  // Bordure extérieure tableau
-  doc.setDrawColor(...BORDER)
-  doc.setGState(doc.GState({ opacity: 0.6 }))
-  doc.setLineWidth(0.4)
-  doc.rect(m, tableTopY, cw, ctx.y - tableTopY)
-  doc.setGState(doc.GState({ opacity: 1 }))
-
-  ctx.y += 10
-}
-
-function separator(ctx: Ctx) {
+function sep(ctx: Ctx) {
   ctx.doc.setDrawColor(255, 255, 255)
   ctx.doc.setGState(ctx.doc.GState({ opacity: 0.06 }))
   ctx.doc.line(ctx.m, ctx.y, ctx.pw - ctx.m, ctx.y)
   ctx.doc.setGState(ctx.doc.GState({ opacity: 1 }))
-  ctx.y += 10
+}
+
+// ── Gauge ──
+function gauge(ctx: Ctx, label: string, score: number) {
+  const { doc, m, cw } = ctx
+  ensure(ctx, 16)
+  doc.setFontSize(9)
+  doc.setTextColor(...LIGHT)
+  doc.setFont('helvetica', 'bold')
+  doc.text(sanitize(label), m, ctx.y)
+  const c = scoreColor(score)
+  const { label: lvl } = getLevelLabel(score)
+  doc.setTextColor(...c)
+  doc.setFont('helvetica', 'normal')
+  doc.text(sanitize(`${score}% - ${lvl}`), m + cw, ctx.y, { align: 'right' })
+  ctx.y += 4
+  doc.setFillColor(255, 255, 255)
+  doc.setGState(doc.GState({ opacity: 0.06 }))
+  doc.roundedRect(m, ctx.y, cw, 5, 2.5, 2.5, 'F')
+  doc.setGState(doc.GState({ opacity: 1 }))
+  doc.setFillColor(...c)
+  doc.roundedRect(m, ctx.y, Math.max(2, (score / 100) * cw), 5, 2.5, 2.5, 'F')
+  ctx.y += 11
+}
+
+// ── drawTable ──
+function drawTable(ctx: Ctx, rows: ActionRow[]) {
+  const { doc, m, cw } = ctx
+  const c1W = cw * 0.24, c2W = cw * 0.44, c3W = cw * 0.32
+  const pX = 6, pY = 5, lh = 4.2
+  const xs = [m, m + c1W, m + c1W + c2W]
+  const ws = [c1W - pX * 2, c2W - pX * 2, c3W - pX * 2]
+
+  // Header 9mm
+  const hH = 9
+  ensure(ctx, hH)
+  const hY = ctx.y
+  doc.setFillColor(...HEADER)
+  doc.rect(m, hY, cw, hH, 'F')
+  doc.setFontSize(7)
+  doc.setTextColor(...ACCENT)
+  doc.setFont('helvetica', 'bold')
+  doc.text(sanitize('CE QUE TU FAIS'), xs[0] + pX, hY + 6)
+  doc.text(sanitize('COMMENT LE FAIRE'), xs[1] + pX, hY + 6)
+  doc.text(sanitize("POURQUOI C'EST IMPORTANT"), xs[2] + pX, hY + 6)
+  // Accent line under header
+  doc.setDrawColor(...ACCENT)
+  doc.setLineWidth(0.5)
+  doc.line(m, hY + hH, m + cw, hY + hH)
+  // Vertical lines header
+  doc.setGState(doc.GState({ opacity: 0.2 }))
+  doc.setLineWidth(0.3)
+  doc.line(xs[1], hY, xs[1], hY + hH)
+  doc.line(xs[2], hY, xs[2], hY + hH)
+  doc.setGState(doc.GState({ opacity: 1 }))
+  ctx.y = hY + hH
+  const tableTop = hY
+
+  rows.forEach((row, ri) => {
+    doc.setFontSize(9)
+    const l1 = doc.splitTextToSize(sanitize(row.action), ws[0]) as string[]
+    doc.setFontSize(8)
+    const l2 = doc.splitTextToSize(sanitize(row.how), ws[1]) as string[]
+    const l3 = doc.splitTextToSize(sanitize(row.why), ws[2]) as string[]
+    const rH = Math.max(l1.length, l2.length, l3.length) * lh + pY * 2
+
+    ensure(ctx, rH)
+    const rY = ctx.y
+    doc.setFillColor(...(ri % 2 === 0 ? CARD : CARD2))
+    doc.rect(m, rY, cw, rH, 'F')
+
+    // Col 1
+    doc.setFontSize(9)
+    doc.setTextColor(...LIGHT)
+    doc.setFont('helvetica', 'bold')
+    l1.forEach((l, i) => doc.text(l, xs[0] + pX, rY + pY + i * lh + 3))
+    // Col 2
+    doc.setFontSize(8)
+    doc.setTextColor(...SECOND)
+    doc.setFont('helvetica', 'normal')
+    l2.forEach((l, i) => doc.text(l, xs[1] + pX, rY + pY + i * lh + 3))
+    // Col 3
+    doc.setFontSize(8)
+    doc.setTextColor(...TERTIARY)
+    doc.setFont('helvetica', 'italic')
+    l3.forEach((l, i) => doc.text(l, xs[2] + pX, rY + pY + i * lh + 3))
+
+    // Vertical grid
+    doc.setDrawColor(...BORDER)
+    doc.setGState(doc.GState({ opacity: 0.6 }))
+    doc.setLineWidth(0.3)
+    doc.line(xs[1], rY, xs[1], rY + rH)
+    doc.line(xs[2], rY, xs[2], rY + rH)
+    doc.setGState(doc.GState({ opacity: 1 }))
+    // Horizontal separator
+    doc.setDrawColor(...BORDER)
+    doc.setGState(doc.GState({ opacity: 0.8 }))
+    doc.setLineWidth(0.25)
+    doc.line(m, rY + rH, m + cw, rY + rH)
+    doc.setGState(doc.GState({ opacity: 1 }))
+
+    ctx.y = rY + rH
+  })
+
+  // Outer border
+  doc.setDrawColor(...BORDER)
+  doc.setGState(doc.GState({ opacity: 0.6 }))
+  doc.setLineWidth(0.4)
+  doc.rect(m, tableTop, cw, ctx.y - tableTop)
+  doc.setGState(doc.GState({ opacity: 1 }))
+  ctx.y += 3
 }
 
 // ══════════════════════════════════════
-// MAIN EXPORT
+// MAIN
 // ══════════════════════════════════════
-
 export function generatePdf(
   prenom: string,
   answers: Record<number, Answer>,
@@ -253,392 +187,315 @@ export function generatePdf(
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pw = doc.internal.pageSize.getWidth()
   const ph = doc.internal.pageSize.getHeight()
-  const m = 22
+  const m = 18
   const cw = pw - m * 2
   const ctx: Ctx = { doc, y: 0, pw, ph, m, cw }
 
   // ══════════════════════════════════════
-  // CORRECTION 2: COVER PAGE
+  // PAGE 1 — COVER
   // ══════════════════════════════════════
   doc.setFillColor(...DARK)
   doc.rect(0, 0, pw, ph, 'F')
 
-  // Logo centered
-  ctx.y = 28
+  // Logo
   doc.setFontSize(14)
   doc.setTextColor(...ACCENT)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize('Clarte Expat'), pw / 2, ctx.y, { align: 'center' })
+  doc.text(sanitize('Clarte Expat'), pw / 2, 30, { align: 'center' })
 
-  // Accent line under logo
-  ctx.y = 36
+  // Accent line
   doc.setDrawColor(...ACCENT)
   doc.setLineWidth(1)
-  doc.line(pw / 2 - 20, ctx.y, pw / 2 + 20, ctx.y)
+  doc.line(pw / 2 - 20, 36, pw / 2 + 20, 36)
   doc.setLineWidth(0.2)
 
-  // "Bonjour [Prenom]"
-  ctx.y = 52
-  doc.setFontSize(32)
+  // Bonjour
+  doc.setFontSize(28)
   doc.setTextColor(...LIGHT)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize(`Bonjour ${prenom}`), pw / 2, ctx.y, { align: 'center' })
+  doc.text(sanitize(`Bonjour ${prenom}`), pw / 2, 52, { align: 'center' })
 
   // Score global
-  const globalColor = scoreColor(scores.global)
-  ctx.y = 72
+  const gc = scoreColor(scores.global)
   doc.setFontSize(52)
-  doc.setTextColor(...globalColor)
+  doc.setTextColor(...gc)
   doc.setFont('helvetica', 'bold')
-  doc.text(`${scores.global}%`, pw / 2, ctx.y, { align: 'center' })
+  doc.text(`${scores.global}%`, pw / 2, 72, { align: 'center' })
 
-  // Label "TON SCORE GLOBAL"
-  ctx.y = 82
+  // Label
   doc.setFontSize(9)
   doc.setTextColor(...MUTED)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize('TON SCORE GLOBAL'), pw / 2, ctx.y, { align: 'center' })
+  doc.text(sanitize('TON SCORE GLOBAL'), pw / 2, 82, { align: 'center' })
 
-  // Score bar global
-  ctx.y = 88
-  const barW = 120
-  const barX = (pw - barW) / 2
+  // Score bar
+  const bW = 120, bX = (pw - bW) / 2
   doc.setFillColor(255, 255, 255)
   doc.setGState(doc.GState({ opacity: 0.06 }))
-  doc.roundedRect(barX, ctx.y, barW, 6, 3, 3, 'F')
+  doc.roundedRect(bX, 87, bW, 5, 2.5, 2.5, 'F')
   doc.setGState(doc.GState({ opacity: 1 }))
-  doc.setFillColor(...globalColor)
-  doc.roundedRect(barX, ctx.y, Math.max(2, (scores.global / 100) * barW), 6, 3, 3, 'F')
-
-  // Space 16px
-  ctx.y = 108
+  doc.setFillColor(...gc)
+  doc.roundedRect(bX, 87, Math.max(2, (scores.global / 100) * bW), 5, 2.5, 2.5, 'F')
 
   // Q7 phrase
+  ctx.y = 106
   const q7 = (answers[7] || 'A') as Answer
   const q8 = (answers[8] || 'A') as Answer
   doc.setFontSize(10)
-  doc.setTextColor(...SECONDARY)
+  doc.setTextColor(...SECOND)
   doc.setFont('helvetica', 'normal')
-  const q7Lines = doc.splitTextToSize(sanitize(q7Phrases[q7]), 140) as string[]
-  for (const line of q7Lines) {
-    doc.text(line, pw / 2, ctx.y, { align: 'center' })
-    ctx.y += 4.5
-  }
+  const q7L = doc.splitTextToSize(sanitize(q7Phrases[q7]), 160) as string[]
+  q7L.forEach(l => { doc.text(l, pw / 2, ctx.y, { align: 'center' }); ctx.y += 4.5 })
 
-  // Space 6px
-  ctx.y += 6
+  ctx.y += 5
 
   // Q8 phrase
-  const q8Lines = doc.splitTextToSize(sanitize(q8Phrases[q8]), 140) as string[]
-  for (const line of q8Lines) {
-    doc.text(line, pw / 2, ctx.y, { align: 'center' })
-    ctx.y += 4.5
-  }
+  const q8L = doc.splitTextToSize(sanitize(q8Phrases[q8]), 160) as string[]
+  q8L.forEach(l => { doc.text(l, pw / 2, ctx.y, { align: 'center' }); ctx.y += 4.5 })
 
-  // Space 20px
-  ctx.y += 20
+  ctx.y += 16
+  sep(ctx)
+  ctx.y += 12
 
-  // Separator
-  doc.setDrawColor(255, 255, 255)
-  doc.setGState(doc.GState({ opacity: 0.1 }))
-  doc.line(m, ctx.y, pw - m, ctx.y)
-  doc.setGState(doc.GState({ opacity: 1 }))
-
-  // Space 14px
-  ctx.y += 14
-
-  // 3 pillar gauges
+  // 3 gauges
   gauge(ctx, pillarNames[1], scores.p1)
   gauge(ctx, pillarNames[2], scores.p2)
   gauge(ctx, pillarNames[3], scores.p3)
 
   // ══════════════════════════════════════
-  // PLAN PAGES — organized by pillar
+  // PAGE 2 — INTRO PLAN
   // ══════════════════════════════════════
-  darkPage(ctx)
+  newPage(ctx)
+  doc.setFontSize(20)
+  doc.setTextColor(...LIGHT)
+  doc.setFont('helvetica', 'bold')
+  doc.text(sanitize("Ton plan d'action"), pw / 2, ctx.y, { align: 'center' })
+  ctx.y += 6
+  doc.setFontSize(9)
+  doc.setTextColor(...MUTED)
+  doc.setFont('helvetica', 'normal')
+  doc.text(sanitize("6 etapes pour une expatriation propre et sereine."), pw / 2, ctx.y, { align: 'center' })
+  ctx.y += 12
 
-  text(ctx, "Ton plan d'action en 6 etapes", 22, LIGHT, { bold: true, align: 'center' })
-  ctx.y += 5
-  text(ctx, "Suis ces etapes dans l'ordre pour une expatriation propre et sereine.", 9, MUTED, { align: 'center' })
-  ctx.y += 18
-
+  // ── Pillars ──
   const pillars = [
-    { num: 1 as const, name: pillarNames[1], score: scores.p1, stepNumbers: [1, 2] },
-    { num: 2 as const, name: pillarNames[2], score: scores.p2, stepNumbers: [3] },
-    { num: 3 as const, name: pillarNames[3], score: scores.p3, stepNumbers: [4, 5, 6] },
+    { num: 1 as const, name: pillarNames[1], score: scores.p1, stepNums: [1, 2] },
+    { num: 2 as const, name: pillarNames[2], score: scores.p2, stepNums: [3] },
+    { num: 3 as const, name: pillarNames[3], score: scores.p3, stepNums: [4, 5, 6] },
   ]
 
-  for (const pillar of pillars) {
-    const level = getLevel(pillar.score)
+  for (const p of pillars) {
+    const level = getLevel(p.score)
+    const intro = pillarIntros[p.num][level]
 
-    // ══════════════════════════════════════
-    // CORRECTION 3: PILLAR HEADER
-    // ══════════════════════════════════════
-    const intro = pillarIntros[pillar.num][level]
-    doc.setFontSize(8.5)
-    const introLines = doc.splitTextToSize(sanitize(intro), cw - 18) as string[]
-    const cardH = 28 + introLines.length * 4.5 + 8
-    ensure(ctx, cardH + 14)
+    // ── Pillar header 18mm ──
+    ensure(ctx, 18)
+    const phY = ctx.y
 
-    doc.setFillColor(...CARD)
-    doc.roundedRect(m, ctx.y, cw, cardH, 4, 4, 'F')
-
+    // Background
+    doc.setFillColor(...HEADER)
+    doc.rect(m, phY, cw, 18, 'F')
     // Accent left bar
     doc.setFillColor(...ACCENT)
-    doc.rect(m, ctx.y, 4, cardH, 'F')
-
-    // Badge "PILIER X"
-    doc.setFillColor(...ACCENT)
-    doc.setGState(doc.GState({ opacity: 0.15 }))
-    doc.roundedRect(m + 12, ctx.y + 8, 36, 10, 3, 3, 'F')
-    doc.setGState(doc.GState({ opacity: 1 }))
-    doc.setFontSize(7.5)
+    doc.rect(m, phY, 3, 18, 'F')
+    // "PILIER X"
+    doc.setFontSize(7)
     doc.setTextColor(...ACCENT)
     doc.setFont('helvetica', 'bold')
-    doc.text(sanitize(`PILIER ${pillar.num}`), m + 14, ctx.y + 15)
-
+    doc.text(sanitize(`PILIER ${p.num}`), m + 5, phY + 7)
+    // Vertical separator
+    doc.setDrawColor(...ACCENT)
+    doc.setGState(doc.GState({ opacity: 0.3 }))
+    doc.setLineWidth(0.3)
+    doc.line(m + 28, phY + 2, m + 28, phY + 16)
+    doc.setGState(doc.GState({ opacity: 1 }))
     // Pillar name
-    doc.setFontSize(14)
+    doc.setFontSize(11)
     doc.setTextColor(...LIGHT)
     doc.setFont('helvetica', 'bold')
-    doc.text(sanitize(pillar.name), m + 52, ctx.y + 15)
-
-    // Personalized phrase
-    doc.setFontSize(8.5)
-    doc.setTextColor(...SECONDARY)
+    doc.text(sanitize(p.name), m + 32, phY + 7)
+    // Intro phrase
+    doc.setFontSize(8)
+    doc.setTextColor(...SECOND)
     doc.setFont('helvetica', 'italic')
-    introLines.forEach((line: string, i: number) => {
-      doc.text(line, m + 12, ctx.y + 28 + i * 4.5)
-    })
+    const iLines = doc.splitTextToSize(sanitize(intro), cw - 7) as string[]
+    iLines.forEach((l, i) => doc.text(l, m + 5, phY + 12 + i * 3.5))
 
-    ctx.y += cardH + 14
+    ctx.y = phY + 18 + 4
 
-    // ── Steps within this pillar ──
-    for (const stepNum of pillar.stepNumbers) {
-      const step = steps[stepNum - 1]
+    // ── Steps ──
+    for (const sn of p.stepNums) {
+      const step = steps[sn - 1]
 
-      // ══════════════════════════════════════
-      // CORRECTION 4: STEP HEADER
-      // ══════════════════════════════════════
-      ensure(ctx, 28)
+      // Step header 14mm
+      ensure(ctx, 14)
+      const shY = ctx.y
       doc.setFillColor(255, 255, 255)
-      doc.setGState(doc.GState({ opacity: 0.04 }))
-      doc.roundedRect(m, ctx.y, cw, 26, 3, 3, 'F')
+      doc.setGState(doc.GState({ opacity: 0.03 }))
+      doc.rect(m, shY, cw, 14, 'F')
       doc.setGState(doc.GState({ opacity: 1 }))
 
-      // Step number
-      doc.setFontSize(8)
+      doc.setFontSize(7)
       doc.setTextColor(...ACCENT)
       doc.setFont('helvetica', 'bold')
-      doc.text(sanitize(`ETAPE ${step.number}`), m + 10, ctx.y + 10)
+      doc.text(sanitize(`ETAPE ${step.number}`), m + 5, shY + 4.5)
 
-      // Step title
-      doc.setFontSize(12)
+      doc.setFontSize(10)
       doc.setTextColor(...LIGHT)
       doc.setFont('helvetica', 'bold')
-      doc.text(sanitize(step.title), m + 10, ctx.y + 20)
+      doc.text(sanitize(step.title), m + 5, shY + 9.5)
 
-      ctx.y += 26
+      let sub = step.subtitle
+      if (step.milestone) sub += ` - ${step.milestone}`
+      doc.setFontSize(7.5)
+      doc.setTextColor(...TERTIARY)
+      doc.setFont('helvetica', 'italic')
+      doc.text(sanitize(sub), m + 5, shY + 13)
 
-      // Subtitle + milestone
-      if (step.subtitle || step.milestone) {
-        let sub = step.subtitle
-        if (step.milestone) sub += ` - ${step.milestone}`
-        doc.setFontSize(8)
-        doc.setTextColor(...MUTED)
-        doc.setFont('helvetica', 'italic')
-        const subLines = doc.splitTextToSize(sanitize(sub), cw - 10) as string[]
-        subLines.forEach((l: string) => { doc.text(l, m + 10, ctx.y); ctx.y += 4.2 })
-      }
-      ctx.y += 10
+      ctx.y = shY + 14 + 3
 
       // Table
       drawTable(ctx, step.rows)
-      ctx.y += 6
 
-      // ══════════════════════════════════════
-      // CORRECTION 6: RESULT BOX
-      // ══════════════════════════════════════
-      ensure(ctx, 22)
-      const rText = sanitize(`Resultat : ${step.result}`)
-      const rLines = doc.splitTextToSize(rText, cw - 20) as string[]
-      const bH = rLines.length * 5 + 16
+      // Result box
+      const rText = sanitize(step.result)
+      doc.setFontSize(8.5)
+      const rLines = doc.splitTextToSize(rText, cw - 30) as string[]
+      const rH = Math.max(rLines.length * 4.2 + 12, 14)
+      ensure(ctx, rH)
+      const rY = ctx.y
 
       // Background
       doc.setFillColor(...ACCENT)
-      doc.setGState(doc.GState({ opacity: 0.12 }))
-      doc.roundedRect(m, ctx.y, cw, bH, 3, 3, 'F')
+      doc.setGState(doc.GState({ opacity: 0.10 }))
+      doc.roundedRect(m, rY, cw, rH, 2, 2, 'F')
       doc.setGState(doc.GState({ opacity: 1 }))
-
       // Left bar
       doc.setFillColor(...ACCENT)
-      doc.rect(m, ctx.y, 3.5, bH, 'F')
+      doc.rect(m, rY, 3, rH, 'F')
 
-      // "Resultat :" in bold accent
-      ctx.y += 10
-      doc.setFontSize(9)
+      // "Resultat :" inline with text
+      doc.setFontSize(8.5)
       doc.setTextColor(...ACCENT)
       doc.setFont('helvetica', 'bold')
-      doc.text(sanitize('Resultat :'), m + 10, ctx.y)
-
-      // Result text
+      doc.text(sanitize('Resultat :'), m + 8, rY + 6 + 3)
+      doc.setTextColor(...LIGHT)
       doc.setFont('helvetica', 'normal')
-      const resultOnly = sanitize(step.result)
-      const resultLines = doc.splitTextToSize(resultOnly, cw - 32) as string[]
-      resultLines.forEach((l: string) => {
-        doc.text(l, m + 32, ctx.y)
-        ctx.y += 5
-      })
-      ctx.y += 14
-    }
+      rLines.forEach((l, i) => doc.text(l, m + 30, rY + 6 + 3 + i * 4.2))
 
-    // Space between pillars
-    ctx.y += 6
+      ctx.y = rY + rH + 8
+    }
   }
 
   // ══════════════════════════════════════
-  // CHECKLIST — vrai tableau avec grille
+  // CHECKLIST
   // ══════════════════════════════════════
   ensure(ctx, 30)
-  separator(ctx)
-  ctx.y += 8
-
-  text(ctx, 'Ta checklist complete', 16, LIGHT, { bold: true, align: 'center' })
+  sep(ctx)
   ctx.y += 6
-  text(ctx, 'Coche chaque etape au fur et a mesure de ton avancement.', 8.5, MUTED, { align: 'center' })
-  ctx.y += 14
+  doc.setFontSize(16)
+  doc.setTextColor(...LIGHT)
+  doc.setFont('helvetica', 'bold')
+  doc.text(sanitize('Ta checklist complete'), pw / 2, ctx.y, { align: 'center' })
+  ctx.y += 10
 
-  // Colonnes checklist
-  const ck1 = cw * 0.30
-  const ck2 = cw * 0.45
-  const ck3 = cw * 0.125
-  const ck4 = cw * 0.125
+  const ck1 = cw * 0.28, ck2 = cw * 0.48, ck3 = cw * 0.12, ck4 = cw * 0.12
   const ckXs = [m, m + ck1, m + ck1 + ck2, m + ck1 + ck2 + ck3]
-  const ckPadX = 7
-  const ckPadY = 6
-  const ckLh = 4.4
+  const ckPX = 6
 
-  // Header checklist
-  const ckHeaderH = 13
-  ensure(ctx, ckHeaderH)
+  // Checklist header 9mm
+  const ckHH = 9
+  ensure(ctx, ckHH)
   const ckHY = ctx.y
-
-  doc.setFillColor(...CARD_HEADER)
-  doc.rect(m, ckHY, cw, ckHeaderH, 'F')
-
-  const ckHeaders = ['CATEGORIE', 'TACHE', 'A FAIRE', 'FAIT']
+  doc.setFillColor(...HEADER)
+  doc.rect(m, ckHY, cw, ckHH, 'F')
   doc.setFontSize(7)
   doc.setTextColor(...ACCENT)
   doc.setFont('helvetica', 'bold')
-  ckHeaders.forEach((h, i) => {
-    doc.text(sanitize(h), ckXs[i] + ckPadX, ckHY + 9)
-  })
-
-  // Ligne accent sous header
+  doc.text(sanitize('CATEGORIE'), ckXs[0] + ckPX, ckHY + 6)
+  doc.text(sanitize('TACHE'), ckXs[1] + ckPX, ckHY + 6)
+  doc.text(sanitize('A FAIRE'), ckXs[2] + ckPX, ckHY + 6)
+  doc.text(sanitize('FAIT'), ckXs[3] + ckPX, ckHY + 6)
+  // Accent line
   doc.setDrawColor(...ACCENT)
   doc.setLineWidth(0.5)
-  doc.line(m, ckHY + ckHeaderH, m + cw, ckHY + ckHeaderH)
-
-  // Lignes verticales header
-  doc.setDrawColor(...ACCENT)
-  doc.setGState(doc.GState({ opacity: 0.25 }))
+  doc.line(m, ckHY + ckHH, m + cw, ckHY + ckHH)
+  // Vertical lines
+  doc.setGState(doc.GState({ opacity: 0.2 }))
   doc.setLineWidth(0.3)
-  doc.line(m + ck1, ckHY, m + ck1, ckHY + ckHeaderH)
-  doc.line(m + ck1 + ck2, ckHY, m + ck1 + ck2, ckHY + ckHeaderH)
-  doc.line(m + ck1 + ck2 + ck3, ckHY, m + ck1 + ck2 + ck3, ckHY + ckHeaderH)
+  doc.line(ckXs[1], ckHY, ckXs[1], ckHY + ckHH)
+  doc.line(ckXs[2], ckHY, ckXs[2], ckHY + ckHH)
+  doc.line(ckXs[3], ckHY, ckXs[3], ckHY + ckHH)
   doc.setGState(doc.GState({ opacity: 1 }))
+  ctx.y = ckHY + ckHH
 
-  ctx.y = ckHY + ckHeaderH
-
-  // Lignes de données checklist
-  let globalRowIndex = 0
-
+  const ckTableTop = ckHY
+  let ri = 0
   for (const cat of checklist) {
-    for (let itemIdx = 0; itemIdx < cat.items.length; itemIdx++) {
-      const item = cat.items[itemIdx]
-      const isFirstInCat = itemIdx === 0
+    for (const item of cat.items) {
+      const rH = 8
+      ensure(ctx, rH)
+      const rY = ctx.y
 
-      doc.setFontSize(8)
-      const catLabel = isFirstInCat ? sanitize(`${cat.emoji} ${cat.title}`) : ''
-      const itemLabel = sanitize(item)
-      const itemLines = doc.splitTextToSize(itemLabel, ck2 - ckPadX * 2) as string[]
-      const rowH = Math.max(itemLines.length * ckLh + ckPadY * 2, 12)
+      doc.setFillColor(...(ri % 2 === 0 ? CARD : CARD2))
+      doc.rect(m, rY, cw, rH, 'F')
 
-      ensure(ctx, rowH)
-      const rowY = ctx.y
+      // Col 1 — category on every row
+      doc.setFontSize(8.5)
+      doc.setTextColor(...ACCENT)
+      doc.setFont('helvetica', 'bold')
+      doc.text(sanitize(`${cat.emoji} ${cat.title}`), ckXs[0] + ckPX, rY + 5.5)
 
-      // Fond alternance sur globalRowIndex
-      const bg = globalRowIndex % 2 === 0 ? CARD : CARD_ALT
-      doc.setFillColor(...bg)
-      doc.rect(m, rowY, cw, rowH, 'F')
-
-      // Col 1 — catégorie (seulement sur première ligne de la catégorie)
-      if (isFirstInCat) {
-        doc.setFontSize(8.5)
-        doc.setTextColor(...ACCENT)
-        doc.setFont('helvetica', 'bold')
-        doc.text(catLabel, ckXs[0] + ckPadX, rowY + ckPadY + 3.5)
-      }
-
-      // Col 2 — tâche
+      // Col 2 — task
       doc.setFontSize(8)
       doc.setTextColor(...LIGHT)
       doc.setFont('helvetica', 'normal')
-      itemLines.forEach((line: string, li: number) => {
-        doc.text(line, ckXs[1] + ckPadX, rowY + ckPadY + li * ckLh + 3.5)
-      })
+      doc.text(sanitize(item), ckXs[1] + ckPX, rY + 5.5)
 
-      // Col 3 — À faire : carré vide
-      const boxSize = 5
-      const boxX = ckXs[2] + (ck3 - boxSize) / 2
-      const boxY = rowY + (rowH - boxSize) / 2
+      // Col 3 — checkbox
+      const bSz = 4, bxY = rY + (rH - bSz) / 2
       doc.setDrawColor(...MUTED)
       doc.setLineWidth(0.4)
-      doc.roundedRect(boxX, boxY, boxSize, boxSize, 1, 1)
+      doc.roundedRect(ckXs[2] + (ck3 - bSz) / 2, bxY, bSz, bSz, 0.8, 0.8)
+      // Col 4 — checkbox
+      doc.roundedRect(ckXs[3] + (ck4 - bSz) / 2, bxY, bSz, bSz, 0.8, 0.8)
 
-      // Col 4 — Fait : carré vide
-      const boxX2 = ckXs[3] + (ck4 - boxSize) / 2
-      doc.roundedRect(boxX2, boxY, boxSize, boxSize, 1, 1)
-
-      // Lignes verticales grille
+      // Vertical grid
       doc.setDrawColor(...BORDER)
       doc.setGState(doc.GState({ opacity: 0.6 }))
       doc.setLineWidth(0.3)
-      doc.line(m + ck1, rowY, m + ck1, rowY + rowH)
-      doc.line(m + ck1 + ck2, rowY, m + ck1 + ck2, rowY + rowH)
-      doc.line(m + ck1 + ck2 + ck3, rowY, m + ck1 + ck2 + ck3, rowY + rowH)
+      doc.line(ckXs[1], rY, ckXs[1], rY + rH)
+      doc.line(ckXs[2], rY, ckXs[2], rY + rH)
+      doc.line(ckXs[3], rY, ckXs[3], rY + rH)
       doc.setGState(doc.GState({ opacity: 1 }))
-
-      // Ligne horizontale
+      // Horizontal
       doc.setDrawColor(...BORDER)
       doc.setGState(doc.GState({ opacity: 0.8 }))
       doc.setLineWidth(0.25)
-      doc.line(m, rowY + rowH, m + cw, rowY + rowH)
+      doc.line(m, rY + rH, m + cw, rY + rH)
       doc.setGState(doc.GState({ opacity: 1 }))
 
-      ctx.y = rowY + rowH
-      globalRowIndex++
+      ctx.y = rY + rH
+      ri++
     }
   }
 
-  // Bordure extérieure checklist
+  // Outer border
   doc.setDrawColor(...BORDER)
   doc.setGState(doc.GState({ opacity: 0.6 }))
   doc.setLineWidth(0.4)
-  doc.rect(m, ckHY, cw, ctx.y - ckHY)
+  doc.rect(m, ckTableTop, cw, ctx.y - ckTableTop)
   doc.setGState(doc.GState({ opacity: 1 }))
-
-  ctx.y += 16
+  ctx.y += 10
 
   // ══════════════════════════════════════
-  // CORRECTION 7: CTA FINAL
+  // CTA FINAL
   // ══════════════════════════════════════
   ensure(ctx, 55)
-  separator(ctx)
-  ctx.y += 12
+  sep(ctx)
+  ctx.y += 8
 
-  // Card CTA
-  const ctaH = 48
+  const ctaH = 45
   doc.setFillColor(...ACCENT)
   doc.setGState(doc.GState({ opacity: 0.08 }))
   doc.roundedRect(m, ctx.y, cw, ctaH, 6, 6, 'F')
@@ -648,50 +505,35 @@ export function generatePdf(
   doc.roundedRect(m, ctx.y, cw, ctaH, 6, 6)
   doc.setLineWidth(0.2)
 
-  // CTA text
   doc.setFontSize(11)
   doc.setTextColor(...LIGHT)
   doc.setFont('helvetica', 'bold')
-  doc.text(
-    sanitize("Tu veux qu'on l'applique ensemble a ta situation ?"),
-    pw / 2, ctx.y + 14,
-    { align: 'center' }
-  )
+  doc.text(sanitize("Tu veux qu'on l'applique ensemble ?"), pw / 2, ctx.y + 13, { align: 'center' })
 
-  // Simulated button
-  const btnW = 110
-  const btnX = (pw - btnW) / 2
+  const btnW = 100, btnX = (pw - btnW) / 2
   doc.setFillColor(...ACCENT)
-  doc.roundedRect(btnX, ctx.y + 20, btnW, 14, 4, 4, 'F')
+  doc.roundedRect(btnX, ctx.y + 19, btnW, 13, 4, 4, 'F')
   doc.setFontSize(9)
   doc.setTextColor(...DARK)
   doc.setFont('helvetica', 'bold')
-  doc.text(
-    sanitize('Reserve ton appel decouverte gratuit - 20 min'),
-    pw / 2, ctx.y + 29,
-    { align: 'center' }
-  )
+  doc.text(sanitize('Reserve ton appel decouverte - 20 min'), pw / 2, ctx.y + 28, { align: 'center' })
 
-  ctx.y += ctaH + 10
-
-  // URL below
+  ctx.y += ctaH + 6
   doc.setFontSize(8)
   doc.setTextColor(...MUTED)
   doc.setFont('helvetica', 'normal')
-  doc.text(
-    'calendly.com/clarte-expat/echange-expatriation-thailande',
-    pw / 2, ctx.y,
-    { align: 'center' }
-  )
+  doc.text('calendly.com/clarte-expat/echange-expatriation-thailande', pw / 2, ctx.y, { align: 'center' })
 
-  // ── FOOTER every page ──
+  // ══════════════════════════════════════
+  // FOOTER
+  // ══════════════════════════════════════
   const total = doc.getNumberOfPages()
   for (let i = 1; i <= total; i++) {
     doc.setPage(i)
     doc.setFontSize(7)
     doc.setTextColor(...MUTED)
-    doc.text(sanitize('Clarte Expat - go.performiance.fr'), m, ph - 10)
-    doc.text(`Page ${i} / ${total}`, pw - m, ph - 10, { align: 'right' })
+    doc.text(sanitize('Clarte Expat - go.performiance.fr'), m, ph - 8)
+    doc.text(`Page ${i} / ${total}`, pw - m, ph - 8, { align: 'right' })
   }
 
   return doc.output('blob')
