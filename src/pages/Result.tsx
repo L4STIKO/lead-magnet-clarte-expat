@@ -469,23 +469,23 @@ export default function Result() {
                 <FakeTable key={i} pillar={section.pillar} rows={section.rows} />
               ))}
             </div>
-            {/* Gradient fade at bottom */}
+            {/* Gradient fade at top */}
             <div style={{
               position: 'absolute',
-              bottom: 0,
+              top: 0,
               left: 0,
               right: 0,
               height: '50%',
-              background: 'linear-gradient(to bottom, transparent, rgba(18,24,35,0.95))',
+              background: 'linear-gradient(to bottom, rgba(18,24,35,0.95), transparent)',
               pointerEvents: 'none',
             }} />
             {/* Lock overlay */}
             <div
-              className="flex flex-col items-center justify-end text-center"
+              className="flex flex-col items-center justify-start text-center"
               style={{
                 position: 'absolute',
                 inset: 0,
-                padding: '0 40px 32px',
+                padding: '32px 40px 0',
               }}
             >
               <span style={{ fontSize: 32, marginBottom: 10 }}>🔒</span>
