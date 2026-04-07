@@ -27,7 +27,7 @@ export default function Landing() {
           {/* H1 */}
           <h1
             className="font-heading font-extrabold"
-            style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 900 }}
+            style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 1200 }}
           >
             <span style={{ color: 'var(--text-primary)' }}>Télécharge ton plan</span>
             <br />
@@ -41,7 +41,7 @@ export default function Landing() {
               fontSize: 16,
               color: 'var(--text-secondary)',
               lineHeight: 1.7,
-              maxWidth: 900,
+              maxWidth: 1200,
               marginBottom: 32,
             }}
           >
