@@ -295,13 +295,13 @@ export function generatePdf(
     doc.setFillColor(...ACCENT)
     doc.rect(m, phY, 3, pillarH, 'F')
     // "PILIER X —" + pillar name on same line
-    doc.setFontSize(9)
+    doc.setFontSize(10)
     doc.setTextColor(...ACCENT)
     doc.setFont('helvetica', 'bold')
     const pillarLabel = sanitize(`PILIER ${p.num}  -`)
     doc.text(pillarLabel, m + 5, phY + 6)
     const labelW = doc.getTextWidth(pillarLabel)
-    doc.setFontSize(12)
+    doc.setFontSize(13)
     doc.setTextColor(...LIGHT)
     doc.setFont('helvetica', 'bold')
     doc.text(sanitize(p.name), m + 5 + labelW + 2, phY + 6)
@@ -325,12 +325,12 @@ export function generatePdf(
       doc.rect(m, shY, cw, 14, 'F')
       doc.setGState(doc.GState({ opacity: 1 }))
 
-      doc.setFontSize(7)
+      doc.setFontSize(8)
       doc.setTextColor(...ACCENT)
       doc.setFont('helvetica', 'bold')
       doc.text(sanitize(`ETAPE ${step.number}`), m + 5, shY + 4.5)
 
-      doc.setFontSize(10)
+      doc.setFontSize(11)
       doc.setTextColor(...LIGHT)
       doc.setFont('helvetica', 'bold')
       doc.text(sanitize(step.title), m + 5, shY + 9.5)
@@ -347,47 +347,35 @@ export function generatePdf(
       // Table
       drawTable(ctx, step.rows)
 
-      // Result box
+      // Result — simple inline "Resultat :" in green + text
       const rText = sanitize(step.result)
       doc.setFontSize(8.5)
-      const rLines = doc.splitTextToSize(rText, cw - 30) as string[]
-      const rH = Math.max(rLines.length * 4.2 + 12, 14)
-      ensure(ctx, rH)
-      const rY = ctx.y
-
-      // Background
-      doc.setFillColor(...ACCENT)
-      doc.setGState(doc.GState({ opacity: 0.10 }))
-      doc.roundedRect(m, rY, cw, rH, 2, 2, 'F')
-      doc.setGState(doc.GState({ opacity: 1 }))
-      // Left bar
-      doc.setFillColor(...ACCENT)
-      doc.rect(m, rY, 3, rH, 'F')
-
-      // "Resultat :" inline with text
-      doc.setFontSize(8.5)
-      doc.setTextColor(...ACCENT)
       doc.setFont('helvetica', 'bold')
-      doc.text(sanitize('Resultat :'), m + 8, rY + 6 + 3)
-      doc.setTextColor(...LIGHT)
+      doc.setTextColor(...ACCENT)
+      const rLabel = sanitize('Resultat : ')
+      const rLabelW = doc.getTextWidth(rLabel)
+      const rLines = doc.splitTextToSize(rText, cw - rLabelW) as string[]
+      ensure(ctx, rLines.length * 4 + 4)
+      doc.text(rLabel, m, ctx.y + 2)
+      doc.setTextColor(...SECOND)
       doc.setFont('helvetica', 'normal')
-      rLines.forEach((l, i) => doc.text(l, m + 30, rY + 6 + 3 + i * 4.2))
+      rLines.forEach((l, i) => doc.text(l, m + rLabelW, ctx.y + 2 + i * 4))
 
-      ctx.y = rY + rH + 8
+      ctx.y += rLines.length * 4 + 8
     }
   }
 
   // ══════════════════════════════════════
   // CHECKLIST
   // ══════════════════════════════════════
-  ensure(ctx, 30)
+  ensure(ctx, 40)
   sep(ctx)
-  ctx.y += 6
+  ctx.y += 14
   doc.setFontSize(16)
   doc.setTextColor(...LIGHT)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize('Ta checklist complete'), pw / 2, ctx.y, { align: 'center' })
-  ctx.y += 10
+  doc.text(sanitize('TA CHECKLIST COMPLETE'), pw / 2, ctx.y, { align: 'center' })
+  ctx.y += 14
 
   const ck1 = cw * 0.26, ck2 = cw * 0.54, ck3 = cw * 0.10, ck4 = cw * 0.10
   const ckXs = [m, m + ck1, m + ck1 + ck2, m + ck1 + ck2 + ck3]
