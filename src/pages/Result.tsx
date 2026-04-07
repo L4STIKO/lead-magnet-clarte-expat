@@ -485,37 +485,49 @@ export default function Result() {
               style={{
                 position: 'absolute',
                 inset: 0,
-                padding: '32px 40px 0',
+                padding: '24px 40px 0',
                 zIndex: 2,
               }}
             >
-              <span style={{ fontSize: 32, marginBottom: 10 }}>🔒</span>
-              <p className="font-body font-medium" style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16 }}>
-                Saisis ton email pour débloquer ton plan complet
-              </p>
-              <button
-                onClick={openForm2}
-                className="font-body font-bold cursor-pointer"
-                style={{
-                  fontSize: 14,
-                  backgroundColor: 'var(--accent)',
-                  color: '#121823',
-                  padding: '12px 32px',
-                  borderRadius: 100,
-                  border: 'none',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--accent-dark)'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--accent)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                }}
-              >
-                Débloquer mon plan →
-              </button>
+              <div style={{
+                backgroundColor: 'rgba(18,24,35,0.85)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                border: '1px solid var(--border-accent)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '28px 36px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}>
+                <span style={{ fontSize: 32, marginBottom: 10 }}>🔒</span>
+                <p className="font-body font-medium" style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16 }}>
+                  Saisis ton email pour débloquer ton plan complet
+                </p>
+                <button
+                  onClick={openForm2}
+                  className="font-body font-bold cursor-pointer"
+                  style={{
+                    fontSize: 14,
+                    backgroundColor: 'var(--accent)',
+                    color: '#121823',
+                    padding: '12px 32px',
+                    borderRadius: 100,
+                    border: 'none',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--accent-dark)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--accent)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  Débloquer mon plan →
+                </button>
+              </div>
             </div>
           </div>
         </div>
