@@ -283,40 +283,35 @@ export function generatePdf(
 
     // ── Pillar header (dynamic height) ──
     doc.setFontSize(8)
-    const iLines = doc.splitTextToSize(sanitize(intro), cw - 7) as string[]
-    const pillarH = 12 + iLines.length * 3.5 + 2
+    const iLines = doc.splitTextToSize(sanitize(intro), cw - 10) as string[]
+    const pillarH = 8 + iLines.length * 3.5 + 3
     ensure(ctx, pillarH)
     const phY = ctx.y
 
     // Background
-    doc.setFillColor(...HEADER)
+    doc.setFillColor(...CARD)
     doc.rect(m, phY, cw, pillarH, 'F')
     // Accent left bar
     doc.setFillColor(...ACCENT)
     doc.rect(m, phY, 3, pillarH, 'F')
-    // "PILIER X"
+    // "PILIER X —" + pillar name on same line
     doc.setFontSize(7)
     doc.setTextColor(...ACCENT)
     doc.setFont('helvetica', 'bold')
-    doc.text(sanitize(`PILIER ${p.num}`), m + 5, phY + 7)
-    // Vertical separator
-    doc.setDrawColor(...ACCENT)
-    doc.setGState(doc.GState({ opacity: 0.3 }))
-    doc.setLineWidth(0.3)
-    doc.line(m + 28, phY + 2, m + 28, phY + pillarH - 2)
-    doc.setGState(doc.GState({ opacity: 1 }))
-    // Pillar name
+    const pillarLabel = sanitize(`PILIER ${p.num}  -`)
+    doc.text(pillarLabel, m + 5, phY + 6)
+    const labelW = doc.getTextWidth(pillarLabel)
     doc.setFontSize(11)
     doc.setTextColor(...LIGHT)
     doc.setFont('helvetica', 'bold')
-    doc.text(sanitize(p.name), m + 32, phY + 7)
+    doc.text(sanitize(p.name), m + 5 + labelW + 2, phY + 6)
     // Intro phrase
     doc.setFontSize(8)
     doc.setTextColor(...SECOND)
     doc.setFont('helvetica', 'italic')
-    iLines.forEach((l, i) => doc.text(l, m + 5, phY + 12 + i * 3.5))
+    iLines.forEach((l, i) => doc.text(l, m + 5, phY + 11 + i * 3.5))
 
-    ctx.y = phY + pillarH + 4
+    ctx.y = phY + pillarH + 6
 
     // ── Steps ──
     for (const sn of p.stepNums) {
