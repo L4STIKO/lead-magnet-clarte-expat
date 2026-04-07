@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import LeadForm from '../components/LeadForm'
@@ -120,12 +120,16 @@ function InlineForm({
   onSubmit,
   loading,
   error,
+  progress,
+  progressLabel,
 }: {
   formRef: React.RefObject<HTMLDivElement | null>
   showForm: boolean
   onSubmit: (prenom: string, email: string) => void
   loading: boolean
   error: string | null
+  progress: number
+  progressLabel: string
 }) {
   if (!showForm) return null
   return (
@@ -141,12 +145,34 @@ function InlineForm({
         margin: '24px auto 0',
       }}
     >
-      <h3 className="font-heading font-bold text-center" style={{ fontSize: 20, marginBottom: 20, color: 'var(--text-primary)' }}>
-        Reçois ton plan personnalisé
-      </h3>
-      <LeadForm onSubmit={onSubmit} loading={loading} />
-      {error && (
-        <p className="text-center" style={{ color: 'var(--red)', fontSize: 13, marginTop: 12 }}>{error}</p>
+      {loading ? (
+        <div className="text-center">
+          <p className="font-body font-semibold" style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 16 }}>
+            {progressLabel}
+          </p>
+          <div style={{ height: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 100, marginBottom: 10, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${progress}%`,
+              backgroundColor: 'var(--accent)',
+              borderRadius: 100,
+              transition: 'width 0.15s ease-out',
+            }} />
+          </div>
+          <p className="font-heading font-bold" style={{ fontSize: 28, color: 'var(--accent)' }}>
+            {progress}%
+          </p>
+        </div>
+      ) : (
+        <>
+          <h3 className="font-heading font-bold text-center" style={{ fontSize: 20, marginBottom: 20, color: 'var(--text-primary)' }}>
+            Reçois ton plan personnalisé
+          </h3>
+          <LeadForm onSubmit={onSubmit} loading={loading} />
+          {error && (
+            <p className="text-center" style={{ color: 'var(--red)', fontSize: 13, marginTop: 12 }}>{error}</p>
+          )}
+        </>
       )}
     </div>
   )
@@ -161,6 +187,9 @@ export default function Result() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [barsVisible, setBarsVisible] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [progressLabel, setProgressLabel] = useState('')
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const answers = useMemo(() => getAnswers(), [])
   const scores = useMemo(() => computeScores(answers), [answers])
@@ -185,32 +214,61 @@ export default function Result() {
     setTimeout(() => formRef2.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100)
   }
 
+  const animateTo = useCallback((target: number, label: string) => {
+    setProgressLabel(label)
+    if (progressRef.current) clearInterval(progressRef.current)
+    return new Promise<void>((resolve) => {
+      progressRef.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= target) {
+            if (progressRef.current) clearInterval(progressRef.current)
+            resolve()
+            return target
+          }
+          return prev + 1
+        })
+      }, 40)
+    })
+  }, [])
+
   async function handleSubmit(prenom: string, email: string) {
     setLoading(true)
     setError(null)
+    setProgress(0)
+
     try {
+      await animateTo(25, 'Création de ton plan personnalisé...')
+
       console.log('[Result] Étape 1 — Génération PDF...')
       const pdfBlob = generatePdf(prenom, answers, scores)
       console.log('[Result] PDF généré:', pdfBlob.size, 'octets')
+
+      await animateTo(55, 'Génération de ton PDF...')
 
       console.log('[Result] Étape 2 — Upload PDF...')
       const { signedUrl } = await uploadPdf(pdfBlob)
       console.log('[Result] Upload OK')
 
+      await animateTo(80, 'Envoi par email...')
+
       console.log('[Result] Étape 3 — Appel Edge Function...')
       await submitLead({ prenom, email, answers, scores, pdfUrl: signedUrl })
       console.log('[Result] Edge Function OK')
+
+      await animateTo(100, 'C\'est prêt !')
 
       sessionStorage.setItem('clarte-expat-prenom', prenom)
       sessionStorage.setItem('clarte-expat-email', email)
       sessionStorage.setItem('clarte-expat-pdf-url', signedUrl)
 
-      navigate('/plan')
+      setTimeout(() => navigate('/plan'), 600)
     } catch (err) {
       console.error('[Result] ERREUR:', err)
+      if (progressRef.current) clearInterval(progressRef.current)
       const message = err instanceof Error ? err.message : 'Erreur inconnue'
       setError(`Erreur : ${message}`)
       setLoading(false)
+      setProgress(0)
     }
   }
 
@@ -288,7 +346,7 @@ export default function Result() {
         </button>
 
         {/* Inline form after CTA 1 */}
-        <InlineForm formRef={formRef1} showForm={showForm1} onSubmit={handleSubmit} loading={loading} error={error} />
+        <InlineForm formRef={formRef1} showForm={showForm1} onSubmit={handleSubmit} loading={loading} error={error} progress={progress} progressLabel={progressLabel} />
 
         <div style={{ height: 56 }} />
       </section>
@@ -370,7 +428,7 @@ export default function Result() {
           </button>
 
           {/* Inline form after CTA 2 */}
-          <InlineForm formRef={formRef2} showForm={showForm2} onSubmit={handleSubmit} loading={loading} error={error} />
+          <InlineForm formRef={formRef2} showForm={showForm2} onSubmit={handleSubmit} loading={loading} error={error} progress={progress} progressLabel={progressLabel} />
         </div>
       </section>
 
