@@ -49,6 +49,7 @@ const FAKE_ROWS = [
       ['Choisir ton lieu de vie', 'Compare les villes selon ton style de vie et tes objectifs business', 'Chaque ville a un impact direct sur ton quotidien'],
       ['Identifier le bon visa', 'Analyse les options DTV, LTR ou Non-Imm B selon ton profil', 'Le mauvais visa peut bloquer ton installation'],
       ['Anticiper ton budget réel', 'Estime tes dépenses mensuelles selon ton style de vie cible', 'Beaucoup sous-estiment leur budget les premiers mois'],
+      ['Trouver un logement', 'Cherche un appartement avec bail de 6 à 12 mois à ton nom', 'Bien choisir ton quartier est essentiel pour t\'intégrer'],
     ],
   },
   {
@@ -56,6 +57,15 @@ const FAKE_ROWS = [
     rows: [
       ['Structurer ton activité', 'Définis la structure juridique adaptée à ton profil et tes clients', 'Le mauvais choix coûte cher à corriger après coup'],
       ['Organiser ta facturation', 'Mets en place un système clair entre compte pro et perso', 'Mélanger pro et perso affaiblit ta substance économique'],
+      ['Documenter ta substance', 'Contrats signés au nom de ta structure, compte bancaire pro actif', 'Sans substance économique tu risques la requalification'],
+    ],
+  },
+  {
+    pillar: 'PILIER 3 — TA RÉSIDENCE FISCALE',
+    rows: [
+      ['Comprendre les 3 critères', 'Informe-toi sur l\'article 4B du CGI et ses implications concrètes', 'Un seul critère suffit pour rester résident fiscal français'],
+      ['Planifier ta sortie', 'Définis la date et la séquence de tes démarches administratives', 'L\'ordre et le timing sont cruciaux pour une sortie propre'],
+      ['Préparer tes déclarations', 'Renseigne-toi sur les formulaires de sortie officielle', 'Deux logiques fiscales différentes à bien distinguer'],
     ],
   },
 ]
@@ -451,55 +461,62 @@ export default function Result() {
 
           {/* Inline form after CTA 2 */}
           <InlineForm formRef={formRef2} showForm={showForm2} onSubmit={handleSubmit} loading={loading} error={error} progress={progress} progressLabel={progressLabel} />
-        </div>
-      </section>
 
-      {/* Blurred fake plan preview */}
-      <section className="container" style={{ position: 'relative', overflow: 'hidden', marginBottom: 0, borderRadius: 'var(--radius-lg)' }}>
-        <div style={{ filter: 'blur(6px)', opacity: 0.5, pointerEvents: 'none', padding: '24px 0' }}>
-          {FAKE_ROWS.map((section, i) => (
-            <FakeTable key={i} pillar={section.pillar} rows={section.rows} />
-          ))}
-        </div>
-        <div
-          className="flex flex-col items-center justify-center text-center"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: 'rgba(18,24,35,0.85)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '32px 40px',
-          }}
-        >
-          <span style={{ fontSize: 40, marginBottom: 16 }}>🔒</span>
-          <p className="font-body font-medium" style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 20 }}>
-            Saisis ton email pour débloquer ton plan complet
-          </p>
-          <button
-            onClick={openForm2}
-            className="font-body font-bold cursor-pointer"
-            style={{
-              fontSize: 14,
-              backgroundColor: 'var(--accent)',
-              color: '#121823',
-              padding: '12px 32px',
-              borderRadius: 100,
-              border: 'none',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--accent-dark)'
-              e.currentTarget.style.transform = 'translateY(-2px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--accent)'
-              e.currentTarget.style.transform = 'translateY(0)'
-            }}
-          >
-            Débloquer mon plan →
-          </button>
+          {/* Blurred fake plan preview — right under CTA 2 */}
+          <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-lg)', marginTop: 32, border: '1px solid var(--border-accent)' }}>
+            <div style={{ filter: 'blur(3px)', opacity: 0.75, pointerEvents: 'none', padding: '20px 16px 8px' }}>
+              {FAKE_ROWS.map((section, i) => (
+                <FakeTable key={i} pillar={section.pillar} rows={section.rows} />
+              ))}
+            </div>
+            {/* Gradient fade at bottom */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '50%',
+              background: 'linear-gradient(to bottom, transparent, rgba(18,24,35,0.95))',
+              pointerEvents: 'none',
+            }} />
+            {/* Lock overlay */}
+            <div
+              className="flex flex-col items-center justify-end text-center"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                padding: '0 40px 32px',
+              }}
+            >
+              <span style={{ fontSize: 32, marginBottom: 10 }}>🔒</span>
+              <p className="font-body font-medium" style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16 }}>
+                Saisis ton email pour débloquer ton plan complet
+              </p>
+              <button
+                onClick={openForm2}
+                className="font-body font-bold cursor-pointer"
+                style={{
+                  fontSize: 14,
+                  backgroundColor: 'var(--accent)',
+                  color: '#121823',
+                  padding: '12px 32px',
+                  borderRadius: 100,
+                  border: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--accent-dark)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--accent)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                Débloquer mon plan →
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

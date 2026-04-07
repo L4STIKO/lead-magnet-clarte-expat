@@ -12,9 +12,9 @@ const CARD2: RGB = [22, 30, 44]
 const HEADER: RGB = [35, 47, 66]
 const ACCENT: RGB = [0, 217, 163]
 const LIGHT: RGB = [242, 244, 246]
-const SECOND: RGB = [200, 206, 216]
-const TERTIARY: RGB = [160, 168, 180]
-const MUTED: RGB = [110, 118, 130]
+const SECOND: RGB = [220, 224, 232]
+const TERTIARY: RGB = [185, 192, 204]
+const MUTED: RGB = [140, 148, 162]
 const BORDER: RGB = [42, 54, 74]
 const RED: RGB = [239, 68, 68]
 const ORANGE: RGB = [249, 115, 22]
@@ -295,13 +295,13 @@ export function generatePdf(
     doc.setFillColor(...ACCENT)
     doc.rect(m, phY, 3, pillarH, 'F')
     // "PILIER X —" + pillar name on same line
-    doc.setFontSize(7)
+    doc.setFontSize(9)
     doc.setTextColor(...ACCENT)
     doc.setFont('helvetica', 'bold')
     const pillarLabel = sanitize(`PILIER ${p.num}  -`)
     doc.text(pillarLabel, m + 5, phY + 6)
     const labelW = doc.getTextWidth(pillarLabel)
-    doc.setFontSize(11)
+    doc.setFontSize(12)
     doc.setTextColor(...LIGHT)
     doc.setFont('helvetica', 'bold')
     doc.text(sanitize(p.name), m + 5 + labelW + 2, phY + 6)
@@ -489,6 +489,9 @@ export function generatePdf(
   doc.setLineWidth(0.8)
   doc.roundedRect(m, ctx.y, cw, ctaH, 5, 5)
   doc.setLineWidth(0.2)
+  const CALENDLY = 'https://calendly.com/clarte-expat/echange-expatriation-thailande'
+  // Make entire CTA card clickable
+  doc.link(m, ctx.y, cw, ctaH, { url: CALENDLY })
 
   // Title
   doc.setFontSize(13)
@@ -497,20 +500,25 @@ export function generatePdf(
   doc.text(sanitize("Tu veux qu'on l'applique ensemble a ta situation ?"), pw / 2, ctx.y + 14, { align: 'center' })
 
   // Button
-  const btnW = 120, btnX = (pw - btnW) / 2
+  const btnW = 134, btnH = 14, btnX = (pw - btnW) / 2, btnY = ctx.y + 22
   doc.setFillColor(...ACCENT)
-  doc.roundedRect(btnX, ctx.y + 22, btnW, 14, 4, 4, 'F')
+  doc.roundedRect(btnX, btnY, btnW, btnH, 4, 4, 'F')
   doc.setFontSize(9.5)
   doc.setTextColor(...DARK)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize('Reserve ton appel decouverte gratuit - 20 min'), pw / 2, ctx.y + 31.5, { align: 'center' })
+  doc.text(sanitize('Reserve ton appel decouverte gratuit - 20 min'), pw / 2, btnY + btnH / 2 + 1.5, { align: 'center' })
+  // Make button clickable
+  doc.link(btnX, btnY, btnW, btnH, { url: CALENDLY })
 
   ctx.y += ctaH + 8
-  // URL
+  // URL (clickable)
   doc.setFontSize(8)
-  doc.setTextColor(...MUTED)
+  doc.setTextColor(...ACCENT)
   doc.setFont('helvetica', 'normal')
-  doc.text('calendly.com/clarte-expat/echange-expatriation-thailande', pw / 2, ctx.y, { align: 'center' })
+  const urlText = 'calendly.com/clarte-expat/echange-expatriation-thailande'
+  doc.text(urlText, pw / 2, ctx.y, { align: 'center' })
+  const urlW = doc.getTextWidth(urlText)
+  doc.link(pw / 2 - urlW / 2, ctx.y - 3, urlW, 5, { url: CALENDLY })
 
   // ══════════════════════════════════════
   // FOOTER
