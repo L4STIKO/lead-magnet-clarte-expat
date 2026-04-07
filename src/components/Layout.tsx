@@ -4,7 +4,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <header
-        className="fixed top-0 left-0 right-0 z-50 flex items-center px-6"
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center px-6"
         style={{
           height: 64,
           backgroundColor: 'rgba(18,24,35,0.95)',
@@ -13,7 +13,17 @@ export default function Layout({ children }: { children: ReactNode }) {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <img src="/logo.png" alt="Clarté Expat" style={{ height: '28px', width: 'auto' }} />
+        <img
+          src="/logo.png"
+          alt="Clarté Expat"
+          style={{ height: 32, width: 'auto', objectFit: 'contain' }}
+          onError={(e) => {
+            const span = document.createElement('span')
+            span.textContent = '🧭 Clarté Expat'
+            span.style.cssText = 'font-weight:700;font-size:18px;color:var(--accent);font-family:Montserrat,sans-serif'
+            e.currentTarget.replaceWith(span)
+          }}
+        />
       </header>
       <main style={{ paddingTop: 64 }}>
         {children}

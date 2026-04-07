@@ -26,8 +26,8 @@ export default function Quiz() {
       setCurrentIndex(nextIndex)
       setSelectedKey(null)
       setDirection('in')
-      setTimeout(() => setAnimating(false), 250)
-    }, 200)
+      setTimeout(() => setAnimating(false), 150)
+    }, 140)
   }, [navigate])
 
   function handleAnswer(answer: Answer) {
@@ -41,7 +41,7 @@ export default function Quiz() {
       } else {
         goTo(0, '/resultat')
       }
-    }, 250)
+    }, 150)
   }
 
   function handleBack() {
