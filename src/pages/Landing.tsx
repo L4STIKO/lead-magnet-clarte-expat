@@ -31,7 +31,7 @@ export default function Landing() {
           >
             <span style={{ color: 'var(--text-primary)' }}>Télécharge ton plan</span>
             <br />
-            <span style={{ color: 'var(--accent)' }}>d'expatriation en Thaïlande.</span>
+            <span style={{ color: 'var(--accent)' }}>d'expatriation en Thaïlande</span>
           </h1>
 
           {/* Subtitle */}
