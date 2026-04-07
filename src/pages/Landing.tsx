@@ -29,9 +29,9 @@ export default function Landing() {
             className="font-heading font-extrabold"
             style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 760 }}
           >
-            <span style={{ color: 'var(--text-primary)' }}>Chaque étape pour réussir</span>
+            <span style={{ color: 'var(--text-primary)' }}>Télécharge ton plan</span>
             <br />
-            <span style={{ color: 'var(--accent)' }}>ton expatriation en Thaïlande.</span>
+            <span style={{ color: 'var(--accent)' }}>d'expatriation en Thaïlande.</span>
           </h1>
 
           {/* Subtitle */}
