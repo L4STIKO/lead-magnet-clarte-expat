@@ -13,17 +13,17 @@ export default function Layout({ children }: { children: ReactNode }) {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <img
-          src="/logo.png"
-          alt="Clarté Expat"
-          style={{ height: 32, width: 'auto', objectFit: 'contain' }}
-          onError={(e) => {
-            const span = document.createElement('span')
-            span.textContent = '🧭 Clarté Expat'
-            span.style.cssText = 'font-weight:700;font-size:18px;color:var(--accent);font-family:Montserrat,sans-serif'
-            e.currentTarget.replaceWith(span)
-          }}
-        />
+        <div className="flex items-center" style={{ gap: 10 }}>
+          <img
+            src="/logo.png"
+            alt="Clarté Expat"
+            style={{ height: 32, width: 'auto', objectFit: 'contain' }}
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
+          <span className="font-heading font-bold" style={{ fontSize: 18, color: 'var(--accent)' }}>
+            Clarté Expat
+          </span>
+        </div>
       </header>
       <main style={{ paddingTop: 64 }}>
         {children}
