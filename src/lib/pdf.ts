@@ -92,7 +92,7 @@ function gauge(ctx: Ctx, label: string, score: number) {
 function drawTable(ctx: Ctx, rows: ActionRow[]) {
   const { doc, m, cw } = ctx
   const c1W = cw * 0.24, c2W = cw * 0.44, c3W = cw * 0.32
-  const pX = 6, pY = 5, lh = 4.2
+  const pX = 5, pY = 4, lh = 3.8
   const xs = [m, m + c1W, m + c1W + c2W]
   const ws = [c1W - pX * 2, c2W - pX * 2, c3W - pX * 2]
 
@@ -119,7 +119,6 @@ function drawTable(ctx: Ctx, rows: ActionRow[]) {
   doc.line(xs[2], hY, xs[2], hY + hH)
   doc.setGState(doc.GState({ opacity: 1 }))
   ctx.y = hY + hH
-  const tableTop = hY
 
   rows.forEach((row, ri) => {
     doc.setFontSize(9)
@@ -167,12 +166,6 @@ function drawTable(ctx: Ctx, rows: ActionRow[]) {
     ctx.y = rY + rH
   })
 
-  // Outer border
-  doc.setDrawColor(...BORDER)
-  doc.setGState(doc.GState({ opacity: 0.6 }))
-  doc.setLineWidth(0.4)
-  doc.rect(m, tableTop, cw, ctx.y - tableTop)
-  doc.setGState(doc.GState({ opacity: 1 }))
   ctx.y += 3
 }
 
@@ -224,7 +217,7 @@ export function generatePdf(
 
   // Label
   doc.setFontSize(9)
-  doc.setTextColor(...MUTED)
+  doc.setTextColor(...TERTIARY)
   doc.setFont('helvetica', 'bold')
   doc.text(sanitize('TON SCORE GLOBAL'), pw / 2, 82, { align: 'center' })
 
@@ -288,16 +281,19 @@ export function generatePdf(
     const level = getLevel(p.score)
     const intro = pillarIntros[p.num][level]
 
-    // ── Pillar header 18mm ──
-    ensure(ctx, 18)
+    // ── Pillar header (dynamic height) ──
+    doc.setFontSize(8)
+    const iLines = doc.splitTextToSize(sanitize(intro), cw - 7) as string[]
+    const pillarH = 12 + iLines.length * 3.5 + 2
+    ensure(ctx, pillarH)
     const phY = ctx.y
 
     // Background
     doc.setFillColor(...HEADER)
-    doc.rect(m, phY, cw, 18, 'F')
+    doc.rect(m, phY, cw, pillarH, 'F')
     // Accent left bar
     doc.setFillColor(...ACCENT)
-    doc.rect(m, phY, 3, 18, 'F')
+    doc.rect(m, phY, 3, pillarH, 'F')
     // "PILIER X"
     doc.setFontSize(7)
     doc.setTextColor(...ACCENT)
@@ -307,7 +303,7 @@ export function generatePdf(
     doc.setDrawColor(...ACCENT)
     doc.setGState(doc.GState({ opacity: 0.3 }))
     doc.setLineWidth(0.3)
-    doc.line(m + 28, phY + 2, m + 28, phY + 16)
+    doc.line(m + 28, phY + 2, m + 28, phY + pillarH - 2)
     doc.setGState(doc.GState({ opacity: 1 }))
     // Pillar name
     doc.setFontSize(11)
@@ -318,10 +314,9 @@ export function generatePdf(
     doc.setFontSize(8)
     doc.setTextColor(...SECOND)
     doc.setFont('helvetica', 'italic')
-    const iLines = doc.splitTextToSize(sanitize(intro), cw - 7) as string[]
     iLines.forEach((l, i) => doc.text(l, m + 5, phY + 12 + i * 3.5))
 
-    ctx.y = phY + 18 + 4
+    ctx.y = phY + pillarH + 4
 
     // ── Steps ──
     for (const sn of p.stepNums) {
@@ -399,7 +394,7 @@ export function generatePdf(
   doc.text(sanitize('Ta checklist complete'), pw / 2, ctx.y, { align: 'center' })
   ctx.y += 10
 
-  const ck1 = cw * 0.28, ck2 = cw * 0.48, ck3 = cw * 0.12, ck4 = cw * 0.12
+  const ck1 = cw * 0.26, ck2 = cw * 0.54, ck3 = cw * 0.10, ck4 = cw * 0.10
   const ckXs = [m, m + ck1, m + ck1 + ck2, m + ck1 + ck2 + ck3]
   const ckPX = 6
 
@@ -429,7 +424,6 @@ export function generatePdf(
   doc.setGState(doc.GState({ opacity: 1 }))
   ctx.y = ckHY + ckHH
 
-  const ckTableTop = ckHY
   let ri = 0
   for (const cat of checklist) {
     for (const item of cat.items) {
@@ -440,11 +434,11 @@ export function generatePdf(
       doc.setFillColor(...(ri % 2 === 0 ? CARD : CARD2))
       doc.rect(m, rY, cw, rH, 'F')
 
-      // Col 1 — category on every row
-      doc.setFontSize(8.5)
+      // Col 1 — category on every row (no emoji)
+      doc.setFontSize(8)
       doc.setTextColor(...ACCENT)
       doc.setFont('helvetica', 'bold')
-      doc.text(sanitize(`${cat.emoji} ${cat.title}`), ckXs[0] + ckPX, rY + 5.5)
+      doc.text(sanitize(cat.title), ckXs[0] + ckPX, rY + 5.5)
 
       // Col 2 — task
       doc.setFontSize(8)
@@ -453,12 +447,12 @@ export function generatePdf(
       doc.text(sanitize(item), ckXs[1] + ckPX, rY + 5.5)
 
       // Col 3 — checkbox
-      const bSz = 4, bxY = rY + (rH - bSz) / 2
+      const bSz = 3.5, bxY = rY + (rH - bSz) / 2
       doc.setDrawColor(...MUTED)
-      doc.setLineWidth(0.4)
-      doc.roundedRect(ckXs[2] + (ck3 - bSz) / 2, bxY, bSz, bSz, 0.8, 0.8)
+      doc.setLineWidth(0.3)
+      doc.roundedRect(ckXs[2] + (ck3 - bSz) / 2, bxY, bSz, bSz, 0.7, 0.7)
       // Col 4 — checkbox
-      doc.roundedRect(ckXs[3] + (ck4 - bSz) / 2, bxY, bSz, bSz, 0.8, 0.8)
+      doc.roundedRect(ckXs[3] + (ck4 - bSz) / 2, bxY, bSz, bSz, 0.7, 0.7)
 
       // Vertical grid
       doc.setDrawColor(...BORDER)
@@ -480,45 +474,44 @@ export function generatePdf(
     }
   }
 
-  // Outer border
-  doc.setDrawColor(...BORDER)
-  doc.setGState(doc.GState({ opacity: 0.6 }))
-  doc.setLineWidth(0.4)
-  doc.rect(m, ckTableTop, cw, ctx.y - ckTableTop)
-  doc.setGState(doc.GState({ opacity: 1 }))
   ctx.y += 10
 
   // ══════════════════════════════════════
   // CTA FINAL
   // ══════════════════════════════════════
-  ensure(ctx, 55)
+  ensure(ctx, 60)
   sep(ctx)
-  ctx.y += 8
+  ctx.y += 10
 
-  const ctaH = 45
+  const ctaH = 50
+  // Card background
   doc.setFillColor(...ACCENT)
-  doc.setGState(doc.GState({ opacity: 0.08 }))
-  doc.roundedRect(m, ctx.y, cw, ctaH, 6, 6, 'F')
+  doc.setGState(doc.GState({ opacity: 0.06 }))
+  doc.roundedRect(m, ctx.y, cw, ctaH, 5, 5, 'F')
   doc.setGState(doc.GState({ opacity: 1 }))
+  // Card border
   doc.setDrawColor(...ACCENT)
-  doc.setLineWidth(0.5)
-  doc.roundedRect(m, ctx.y, cw, ctaH, 6, 6)
+  doc.setLineWidth(0.8)
+  doc.roundedRect(m, ctx.y, cw, ctaH, 5, 5)
   doc.setLineWidth(0.2)
 
-  doc.setFontSize(11)
+  // Title
+  doc.setFontSize(13)
   doc.setTextColor(...LIGHT)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize("Tu veux qu'on l'applique ensemble ?"), pw / 2, ctx.y + 13, { align: 'center' })
+  doc.text(sanitize("Tu veux qu'on l'applique ensemble a ta situation ?"), pw / 2, ctx.y + 14, { align: 'center' })
 
-  const btnW = 100, btnX = (pw - btnW) / 2
+  // Button
+  const btnW = 120, btnX = (pw - btnW) / 2
   doc.setFillColor(...ACCENT)
-  doc.roundedRect(btnX, ctx.y + 19, btnW, 13, 4, 4, 'F')
-  doc.setFontSize(9)
+  doc.roundedRect(btnX, ctx.y + 22, btnW, 14, 4, 4, 'F')
+  doc.setFontSize(9.5)
   doc.setTextColor(...DARK)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize('Reserve ton appel decouverte - 20 min'), pw / 2, ctx.y + 28, { align: 'center' })
+  doc.text(sanitize('Reserve ton appel decouverte gratuit - 20 min'), pw / 2, ctx.y + 31.5, { align: 'center' })
 
-  ctx.y += ctaH + 6
+  ctx.y += ctaH + 8
+  // URL
   doc.setFontSize(8)
   doc.setTextColor(...MUTED)
   doc.setFont('helvetica', 'normal')
