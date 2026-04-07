@@ -13,9 +13,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <span className="font-heading font-bold text-lg" style={{ color: 'var(--accent)' }}>
-          🧭 Clarté Expat
-        </span>
+        <img src="/logo.png" alt="Clarté Expat" style={{ height: '28px', width: 'auto' }} />
       </header>
       <main style={{ paddingTop: 64 }}>
         {children}
