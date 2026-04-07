@@ -92,12 +92,12 @@ function gauge(ctx: Ctx, label: string, score: number) {
 function drawTable(ctx: Ctx, rows: ActionRow[]) {
   const { doc, m, cw } = ctx
   const c1W = cw * 0.24, c2W = cw * 0.44, c3W = cw * 0.32
-  const pX = 5, pY = 4, lh = 3.8
+  const pX = 4, pY = 2.5, lh = 3.5
   const xs = [m, m + c1W, m + c1W + c2W]
   const ws = [c1W - pX * 2, c2W - pX * 2, c3W - pX * 2]
 
-  // Header 9mm
-  const hH = 9
+  // Header 8mm
+  const hH = 8
   ensure(ctx, hH)
   const hY = ctx.y
   doc.setFillColor(...HEADER)
@@ -105,9 +105,9 @@ function drawTable(ctx: Ctx, rows: ActionRow[]) {
   doc.setFontSize(7)
   doc.setTextColor(...ACCENT)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize('CE QUE TU FAIS'), xs[0] + pX, hY + 6)
-  doc.text(sanitize('COMMENT LE FAIRE'), xs[1] + pX, hY + 6)
-  doc.text(sanitize("POURQUOI C'EST IMPORTANT"), xs[2] + pX, hY + 6)
+  doc.text(sanitize('CE QUE TU FAIS'), xs[0] + pX, hY + 5.5)
+  doc.text(sanitize('COMMENT LE FAIRE'), xs[1] + pX, hY + 5.5)
+  doc.text(sanitize("POURQUOI C'EST IMPORTANT"), xs[2] + pX, hY + 5.5)
   // Accent line under header
   doc.setDrawColor(...ACCENT)
   doc.setLineWidth(0.5)
@@ -121,7 +121,7 @@ function drawTable(ctx: Ctx, rows: ActionRow[]) {
   ctx.y = hY + hH
 
   rows.forEach((row, ri) => {
-    doc.setFontSize(9)
+    doc.setFontSize(8.5)
     const l1 = doc.splitTextToSize(sanitize(row.action), ws[0]) as string[]
     doc.setFontSize(8)
     const l2 = doc.splitTextToSize(sanitize(row.how), ws[1]) as string[]
@@ -134,20 +134,20 @@ function drawTable(ctx: Ctx, rows: ActionRow[]) {
     doc.rect(m, rY, cw, rH, 'F')
 
     // Col 1
-    doc.setFontSize(9)
+    doc.setFontSize(8.5)
     doc.setTextColor(...LIGHT)
     doc.setFont('helvetica', 'bold')
-    l1.forEach((l, i) => doc.text(l, xs[0] + pX, rY + pY + i * lh + 3))
+    l1.forEach((l, i) => doc.text(l, xs[0] + pX, rY + pY + i * lh + 2.5))
     // Col 2
     doc.setFontSize(8)
     doc.setTextColor(...SECOND)
     doc.setFont('helvetica', 'normal')
-    l2.forEach((l, i) => doc.text(l, xs[1] + pX, rY + pY + i * lh + 3))
+    l2.forEach((l, i) => doc.text(l, xs[1] + pX, rY + pY + i * lh + 2.5))
     // Col 3
     doc.setFontSize(8)
     doc.setTextColor(...TERTIARY)
     doc.setFont('helvetica', 'italic')
-    l3.forEach((l, i) => doc.text(l, xs[2] + pX, rY + pY + i * lh + 3))
+    l3.forEach((l, i) => doc.text(l, xs[2] + pX, rY + pY + i * lh + 2.5))
 
     // Vertical grid
     doc.setDrawColor(...BORDER)
