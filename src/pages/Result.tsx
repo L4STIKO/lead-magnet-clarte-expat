@@ -246,7 +246,7 @@ export default function Result() {
     setTimeout(() => formRef2.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100)
   }
 
-  const animateTo = useCallback((target: number, label: string) => {
+  const animateTo = useCallback((target: number, label: string, speed = 40) => {
     setProgressLabel(label)
     if (progressRef.current) clearInterval(progressRef.current)
     return new Promise<void>((resolve) => {
@@ -259,7 +259,7 @@ export default function Result() {
           }
           return prev + 1
         })
-      }, 40)
+      }, speed)
     })
   }, [])
 
@@ -281,11 +281,14 @@ export default function Result() {
       const { signedUrl } = await uploadPdf(pdfBlob)
       console.log('[Result] Upload OK')
 
-      await animateTo(80, 'Envoi par email...')
+      await animateTo(75, 'Envoi par email...')
 
       console.log('[Result] Étape 3 — Appel Edge Function...')
+      // Animate slowly to 95% while waiting for email to send
+      void animateTo(95, 'Envoi par email...', 200)
       await submitLead({ prenom, email, answers, scores, pdfUrl: signedUrl })
       console.log('[Result] Edge Function OK')
+      if (progressRef.current) clearInterval(progressRef.current)
 
       await animateTo(100, 'C\'est prêt !')
 
