@@ -27,7 +27,7 @@ export default function Landing() {
           {/* H1 */}
           <h1
             className="font-heading font-extrabold"
-            style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 760 }}
+            style={{ fontSize: 72, lineHeight: 1.1, marginBottom: 28, maxWidth: 900 }}
           >
             <span style={{ color: 'var(--text-primary)' }}>Télécharge ton plan</span>
             <br />
@@ -38,10 +38,10 @@ export default function Landing() {
           <p
             className="font-body"
             style={{
-              fontSize: 16,
+              fontSize: 19,
               color: 'var(--text-secondary)',
               lineHeight: 1.7,
-              maxWidth: 680,
+              maxWidth: 780,
               marginBottom: 32,
             }}
           >
@@ -93,10 +93,10 @@ export default function Landing() {
       <style>{`
         @media (max-width: 639px) {
           section.container { padding: 80px 20px 60px !important; }
-          h1 { font-size: 34px !important; }
+          h1 { font-size: 36px !important; }
         }
         @media (min-width: 640px) and (max-width: 1024px) {
-          h1 { font-size: 42px !important; }
+          h1 { font-size: 52px !important; }
         }
       `}</style>
     </Layout>
