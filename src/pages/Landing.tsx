@@ -27,7 +27,7 @@ export default function Landing() {
           {/* H1 */}
           <h1
             className="font-heading font-extrabold"
-            style={{ fontSize: 56, lineHeight: 1.1, marginBottom: 24, maxWidth: 1200 }}
+            style={{ fontSize: 64, lineHeight: 1.1, marginBottom: 28, maxWidth: 1200 }}
           >
             <span style={{ color: 'var(--text-primary)' }}>Télécharge ton plan</span>
             <br />
@@ -38,7 +38,7 @@ export default function Landing() {
           <p
             className="font-body"
             style={{
-              fontSize: 16,
+              fontSize: 18,
               color: 'var(--text-secondary)',
               lineHeight: 1.7,
               maxWidth: 1200,
@@ -51,7 +51,7 @@ export default function Landing() {
           {/* Stats line */}
           <p
             className="font-body font-medium"
-            style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 40 }}
+            style={{ fontSize: 16, color: 'var(--text-muted)', marginBottom: 40 }}
           >
             8 questions · 3 min · 100% gratuit
           </p>
@@ -61,7 +61,7 @@ export default function Landing() {
             onClick={() => navigate('/quiz')}
             className="font-body font-bold cursor-pointer"
             style={{
-              fontSize: 17,
+              fontSize: 18,
               backgroundColor: 'var(--accent)',
               color: '#121823',
               padding: '18px 52px',
@@ -83,7 +83,7 @@ export default function Landing() {
           </button>
 
           {/* Mention */}
-          <p className="font-body" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 16 }}>
+          <p className="font-body" style={{ fontSize: 15, color: 'var(--text-muted)', marginTop: 16 }}>
             Déjà utilisé par des entrepreneurs français installés en Thaïlande 🇹🇭
           </p>
         </div>
