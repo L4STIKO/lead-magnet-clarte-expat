@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf'
-import { steps, checklist } from '../config/plan-data'
+import { steps, checklist, type ActionRow } from '../config/plan-data'
 import { pillarNames, type Answer } from '../config/questions'
 import { q7Phrases, q8Phrases, pillarIntros, getLevel, getLevelLabel } from '../config/personalization'
 import type { Scores } from './scoring'
@@ -14,6 +14,8 @@ const SECONDARY: RGB = [136, 146, 164]   // #8892a4
 const MUTED: RGB = [90, 100, 120]        // #5a6478
 const RED: RGB = [239, 68, 68]
 const ORANGE: RGB = [249, 115, 22]
+const CARD_HEADER: RGB = [35, 47, 66]    // #232f42 — header tableau
+const BORDER: RGB = [42, 54, 74]         // #2a364a — bordures grille
 
 type RGB = [number, number, number]
 
@@ -115,117 +117,120 @@ function gauge(ctx: Ctx, label: string, score: number) {
   ctx.y += 14
 }
 
-interface TableRow {
-  action: string
-  how: string
-  why: string
-}
-
-// ── CORRECTION 5: increased padding in drawTable ──
-function drawTable(ctx: Ctx, rows: TableRow[]) {
+function drawTable(ctx: Ctx, rows: ActionRow[]) {
   const { doc, m, cw } = ctx
-  const cellPadX = 8
-  const cellPadY = 12
-  const lh = 4.8
-  const col1W = cw * 0.25
-  const col2W = cw * 0.45
-  const col3W = cw * 0.30
-  const col1X = m + cellPadX
-  const col2X = m + col1W + cellPadX
-  const col3X = m + col1W + col2W + cellPadX
-  const innerCol1 = col1W - cellPadX * 2
-  const innerCol2 = col2W - cellPadX * 2
-  const innerCol3 = col3W - cellPadX * 2
+  const col1W = cw * 0.24
+  const col2W = cw * 0.44
+  const col3W = cw * 0.32
+  const padX = 7
+  const padY = 7
+  const lh = 4.6
 
-  // ── Header row ──
-  ensure(ctx, 14)
-  doc.setFillColor(255, 255, 255)
-  doc.setGState(doc.GState({ opacity: 0.06 }))
-  doc.rect(m, ctx.y, cw, 10, 'F')
-  doc.setGState(doc.GState({ opacity: 1 }))
+  const colXs = [m, m + col1W, m + col1W + col2W]
+  const colWs = [col1W - padX * 2, col2W - padX * 2, col3W - padX * 2]
 
-  const headerY = ctx.y + 7
+  // ── HEADER TABLEAU ──
+  const headerH = 13
+  ensure(ctx, headerH)
+  const headerY = ctx.y
+
+  // Fond header
+  doc.setFillColor(...CARD_HEADER)
+  doc.rect(m, headerY, cw, headerH, 'F')
+
+  // Textes header
+  const headers = ['CE QUE TU FAIS', 'COMMENT LE FAIRE', "POURQUOI C'EST IMPORTANT"]
   doc.setFontSize(7)
-  doc.setTextColor(...MUTED)
+  doc.setTextColor(...ACCENT)
   doc.setFont('helvetica', 'bold')
-  doc.text(sanitize('CE QUE TU FAIS'), col1X, headerY)
-  doc.text(sanitize('COMMENT LE FAIRE'), col2X, headerY)
-  doc.text(sanitize("POURQUOI C'EST IMPORTANT"), col3X, headerY)
-  ctx.y += 10
+  headers.forEach((h, i) => {
+    doc.text(sanitize(h), colXs[i] + padX, headerY + 9)
+  })
 
-  // Header accent line
+  // Ligne accent sous header
   doc.setDrawColor(...ACCENT)
-  doc.setGState(doc.GState({ opacity: 0.3 }))
   doc.setLineWidth(0.5)
-  doc.line(m, ctx.y, m + cw, ctx.y)
+  doc.line(m, headerY + headerH, m + cw, headerY + headerH)
+
+  // Lignes verticales header
+  doc.setDrawColor(...ACCENT)
+  doc.setGState(doc.GState({ opacity: 0.25 }))
+  doc.setLineWidth(0.3)
+  doc.line(m + col1W, headerY, m + col1W, headerY + headerH)
+  doc.line(m + col1W + col2W, headerY, m + col1W + col2W, headerY + headerH)
   doc.setGState(doc.GState({ opacity: 1 }))
-  doc.setLineWidth(0.2)
 
-  // ── Data rows ──
+  ctx.y = headerY + headerH
+
+  // Track table start for outer border
+  const tableTopY = headerY
+
+  // ── LIGNES DE DONNÉES ──
   rows.forEach((row, ri) => {
-    // Measure row height with new lh and padding
-    doc.setFontSize(9)
-    const actionLines = doc.splitTextToSize(sanitize(row.action), innerCol1) as string[]
     doc.setFontSize(8.5)
-    const howLines = doc.splitTextToSize(sanitize(row.how), innerCol2) as string[]
-    const whyLines = row.why ? doc.splitTextToSize(sanitize(row.why), innerCol3) as string[] : []
+    const l1 = doc.splitTextToSize(sanitize(row.action), colWs[0]) as string[]
+    const l2 = doc.splitTextToSize(sanitize(row.how), colWs[1]) as string[]
+    const l3 = doc.splitTextToSize(sanitize(row.why), colWs[2]) as string[]
+    const rowH = Math.max(l1.length, l2.length, l3.length) * lh + padY * 2
 
-    const h1 = actionLines.length * lh + cellPadY * 2 + 4
-    const h2 = howLines.length * lh + cellPadY * 2 + 4
-    const h3 = whyLines.length > 0 ? whyLines.length * lh + cellPadY * 2 + 4 : 0
-    const rowH = Math.max(h1, h2, h3)
+    ensure(ctx, rowH)
+    const rowY = ctx.y
 
-    ensure(ctx, rowH + 6)
-
-    // Alternating background
+    // Fond alternance
     const bg = ri % 2 === 0 ? CARD : CARD_ALT
     doc.setFillColor(...bg)
-    doc.rect(m, ctx.y, cw, rowH, 'F')
+    doc.rect(m, rowY, cw, rowH, 'F')
 
-    const cellTop = ctx.y + cellPadY
-
-    // Col 1: action
+    // Col 1 — action bold blanc
     doc.setFontSize(9)
     doc.setTextColor(...LIGHT)
     doc.setFont('helvetica', 'bold')
-    let drawY = cellTop
-    for (const line of actionLines) {
-      doc.text(line, col1X, drawY)
-      drawY += lh
-    }
+    l1.forEach((line: string, li: number) => {
+      doc.text(line, colXs[0] + padX, rowY + padY + li * lh + 3.5)
+    })
 
-    // Col 2: how
+    // Col 2 — how normal secondary
     doc.setFontSize(8.5)
     doc.setTextColor(...SECONDARY)
     doc.setFont('helvetica', 'normal')
-    drawY = cellTop
-    for (const line of howLines) {
-      doc.text(line, col2X, drawY)
-      drawY += lh
-    }
+    l2.forEach((line: string, li: number) => {
+      doc.text(line, colXs[1] + padX, rowY + padY + li * lh + 3.5)
+    })
 
-    // Col 3: why (italic)
-    if (whyLines.length > 0) {
-      doc.setFontSize(8.5)
-      doc.setTextColor(...MUTED)
-      doc.setFont('helvetica', 'italic')
-      drawY = cellTop
-      for (const line of whyLines) {
-        doc.text(line, col3X, drawY)
-        drawY += lh
-      }
-    }
+    // Col 3 — why italic muted
+    doc.setFontSize(8.5)
+    doc.setTextColor(...MUTED)
+    doc.setFont('helvetica', 'italic')
+    l3.forEach((line: string, li: number) => {
+      doc.text(line, colXs[2] + padX, rowY + padY + li * lh + 3.5)
+    })
 
-    ctx.y += rowH + 4 // 4px gap between rows
+    // Lignes verticales de grille
+    doc.setDrawColor(...BORDER)
+    doc.setGState(doc.GState({ opacity: 0.6 }))
+    doc.setLineWidth(0.3)
+    doc.line(m + col1W, rowY, m + col1W, rowY + rowH)
+    doc.line(m + col1W + col2W, rowY, m + col1W + col2W, rowY + rowH)
+    doc.setGState(doc.GState({ opacity: 1 }))
 
-    // Row separator
-    if (ri < rows.length - 1) {
-      doc.setDrawColor(255, 255, 255)
-      doc.setGState(doc.GState({ opacity: 0.04 }))
-      doc.line(m, ctx.y - 4, m + cw, ctx.y - 4)
-      doc.setGState(doc.GState({ opacity: 1 }))
-    }
+    // Ligne horizontale entre lignes
+    doc.setDrawColor(...BORDER)
+    doc.setGState(doc.GState({ opacity: 0.8 }))
+    doc.setLineWidth(0.25)
+    doc.line(m, rowY + rowH, m + cw, rowY + rowH)
+    doc.setGState(doc.GState({ opacity: 1 }))
+
+    ctx.y = rowY + rowH
   })
+
+  // Bordure extérieure tableau
+  doc.setDrawColor(...BORDER)
+  doc.setGState(doc.GState({ opacity: 0.6 }))
+  doc.setLineWidth(0.4)
+  doc.rect(m, tableTopY, cw, ctx.y - tableTopY)
+  doc.setGState(doc.GState({ opacity: 1 }))
+
+  ctx.y += 10
 }
 
 function separator(ctx: Ctx) {
@@ -492,47 +497,138 @@ export function generatePdf(
   }
 
   // ══════════════════════════════════════
-  // CORRECTION 8: CHECKLIST SPACING
+  // CHECKLIST — vrai tableau avec grille
   // ══════════════════════════════════════
   ensure(ctx, 30)
   separator(ctx)
-  ctx.y += 5
+  ctx.y += 8
 
-  text(ctx, 'Ta checklist complete', 18, LIGHT, { bold: true, align: 'center' })
+  text(ctx, 'Ta checklist complete', 16, LIGHT, { bold: true, align: 'center' })
+  ctx.y += 6
+  text(ctx, 'Coche chaque etape au fur et a mesure de ton avancement.', 8.5, MUTED, { align: 'center' })
   ctx.y += 14
 
+  // Colonnes checklist
+  const ck1 = cw * 0.30
+  const ck2 = cw * 0.45
+  const ck3 = cw * 0.125
+  const ck4 = cw * 0.125
+  const ckXs = [m, m + ck1, m + ck1 + ck2, m + ck1 + ck2 + ck3]
+  const ckPadX = 7
+  const ckPadY = 6
+  const ckLh = 4.4
+
+  // Header checklist
+  const ckHeaderH = 13
+  ensure(ctx, ckHeaderH)
+  const ckHY = ctx.y
+
+  doc.setFillColor(...CARD_HEADER)
+  doc.rect(m, ckHY, cw, ckHeaderH, 'F')
+
+  const ckHeaders = ['CATEGORIE', 'TACHE', 'A FAIRE', 'FAIT']
+  doc.setFontSize(7)
+  doc.setTextColor(...ACCENT)
+  doc.setFont('helvetica', 'bold')
+  ckHeaders.forEach((h, i) => {
+    doc.text(sanitize(h), ckXs[i] + ckPadX, ckHY + 9)
+  })
+
+  // Ligne accent sous header
+  doc.setDrawColor(...ACCENT)
+  doc.setLineWidth(0.5)
+  doc.line(m, ckHY + ckHeaderH, m + cw, ckHY + ckHeaderH)
+
+  // Lignes verticales header
+  doc.setDrawColor(...ACCENT)
+  doc.setGState(doc.GState({ opacity: 0.25 }))
+  doc.setLineWidth(0.3)
+  doc.line(m + ck1, ckHY, m + ck1, ckHY + ckHeaderH)
+  doc.line(m + ck1 + ck2, ckHY, m + ck1 + ck2, ckHY + ckHeaderH)
+  doc.line(m + ck1 + ck2 + ck3, ckHY, m + ck1 + ck2 + ck3, ckHY + ckHeaderH)
+  doc.setGState(doc.GState({ opacity: 1 }))
+
+  ctx.y = ckHY + ckHeaderH
+
+  // Lignes de données checklist
+  let globalRowIndex = 0
+
   for (const cat of checklist) {
-    ensure(ctx, 20)
+    for (let itemIdx = 0; itemIdx < cat.items.length; itemIdx++) {
+      const item = cat.items[itemIdx]
+      const isFirstInCat = itemIdx === 0
 
-    // Category title with background
-    doc.setFillColor(255, 255, 255)
-    doc.setGState(doc.GState({ opacity: 0.04 }))
-    doc.roundedRect(m, ctx.y - 5, cw, 16, 3, 3, 'F')
-    doc.setGState(doc.GState({ opacity: 1 }))
+      doc.setFontSize(8)
+      const catLabel = isFirstInCat ? sanitize(`${cat.emoji} ${cat.title}`) : ''
+      const itemLabel = sanitize(item)
+      const itemLines = doc.splitTextToSize(itemLabel, ck2 - ckPadX * 2) as string[]
+      const rowH = Math.max(itemLines.length * ckLh + ckPadY * 2, 12)
 
-    doc.setFontSize(12)
-    doc.setTextColor(...LIGHT)
-    doc.setFont('helvetica', 'bold')
-    doc.text(sanitize(cat.title), m + 8, ctx.y + 4)
-    ctx.y += 16
+      ensure(ctx, rowH)
+      const rowY = ctx.y
 
-    for (const item of cat.items) {
-      ensure(ctx, 11)
+      // Fond alternance sur globalRowIndex
+      const bg = globalRowIndex % 2 === 0 ? CARD : CARD_ALT
+      doc.setFillColor(...bg)
+      doc.rect(m, rowY, cw, rowH, 'F')
 
-      // Checkbox 5x5
-      doc.setDrawColor(...MUTED)
-      doc.setLineWidth(0.3)
-      doc.roundedRect(m, ctx.y - 3.5, 5, 5, 1, 1)
-      doc.setLineWidth(0.2)
+      // Col 1 — catégorie (seulement sur première ligne de la catégorie)
+      if (isFirstInCat) {
+        doc.setFontSize(8.5)
+        doc.setTextColor(...ACCENT)
+        doc.setFont('helvetica', 'bold')
+        doc.text(catLabel, ckXs[0] + ckPadX, rowY + ckPadY + 3.5)
+      }
 
-      doc.setFontSize(8.5)
+      // Col 2 — tâche
+      doc.setFontSize(8)
       doc.setTextColor(...LIGHT)
       doc.setFont('helvetica', 'normal')
-      doc.text(sanitize(item), m + 9, ctx.y)
-      ctx.y += 9
+      itemLines.forEach((line: string, li: number) => {
+        doc.text(line, ckXs[1] + ckPadX, rowY + ckPadY + li * ckLh + 3.5)
+      })
+
+      // Col 3 — À faire : carré vide
+      const boxSize = 5
+      const boxX = ckXs[2] + (ck3 - boxSize) / 2
+      const boxY = rowY + (rowH - boxSize) / 2
+      doc.setDrawColor(...MUTED)
+      doc.setLineWidth(0.4)
+      doc.roundedRect(boxX, boxY, boxSize, boxSize, 1, 1)
+
+      // Col 4 — Fait : carré vide
+      const boxX2 = ckXs[3] + (ck4 - boxSize) / 2
+      doc.roundedRect(boxX2, boxY, boxSize, boxSize, 1, 1)
+
+      // Lignes verticales grille
+      doc.setDrawColor(...BORDER)
+      doc.setGState(doc.GState({ opacity: 0.6 }))
+      doc.setLineWidth(0.3)
+      doc.line(m + ck1, rowY, m + ck1, rowY + rowH)
+      doc.line(m + ck1 + ck2, rowY, m + ck1 + ck2, rowY + rowH)
+      doc.line(m + ck1 + ck2 + ck3, rowY, m + ck1 + ck2 + ck3, rowY + rowH)
+      doc.setGState(doc.GState({ opacity: 1 }))
+
+      // Ligne horizontale
+      doc.setDrawColor(...BORDER)
+      doc.setGState(doc.GState({ opacity: 0.8 }))
+      doc.setLineWidth(0.25)
+      doc.line(m, rowY + rowH, m + cw, rowY + rowH)
+      doc.setGState(doc.GState({ opacity: 1 }))
+
+      ctx.y = rowY + rowH
+      globalRowIndex++
     }
-    ctx.y += 14
   }
+
+  // Bordure extérieure checklist
+  doc.setDrawColor(...BORDER)
+  doc.setGState(doc.GState({ opacity: 0.6 }))
+  doc.setLineWidth(0.4)
+  doc.rect(m, ckHY, cw, ctx.y - ckHY)
+  doc.setGState(doc.GState({ opacity: 1 }))
+
+  ctx.y += 16
 
   // ══════════════════════════════════════
   // CORRECTION 7: CTA FINAL
